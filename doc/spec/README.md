@@ -15,7 +15,7 @@ delta from pi's stock defaults. Secrets are redacted; structure is recorded.
 | [agent-instructions.md](agent-instructions.md) | Global system prompt | `~/.pi/agent/AGENT.md` |
 | [extensions.md](extensions.md) | Custom extensions | `~/.pi/agent/extensions/*.ts` |
 | [skills.md](skills.md) | Installed skills | `~/.pi/agent/skills/` |
-| [bin-and-shell.md](bin-and-shell.md) | Helper scripts & shell alias | `~/.pi/agent/bin/`, `~/.bashrc` |
+| [bin-and-shell.md](bin-and-shell.md) | Helper scripts & shell alias | `tools/pi-snap`, `install.sh`, `~/.pi/agent/bin/`, `~/.bashrc` |
 
 ## Related design doc
 
@@ -30,4 +30,4 @@ delta from pi's stock defaults. Secrets are redacted; structure is recorded.
 5. **Extensions**: `delete-guard` (destructive-op guard) + `session-snapshot` (rollback snapshots).
 6. **Keybindings**: vim-style cursor + `alt+enter` newline.
 7. **Skills**: catch-up-project, code-review, grill-me, science-skills-common, uv.
-8. **Helpers**: `pi-snap` hardlink snapshot script + `pi-snap` shell alias + `fd` binary.
+8. **Helpers**: `pi-snap` snapshot/management CLI (repo `tools/pi-snap`, deployed by `install.sh`) + `pi-snap` shell alias + `fd` binary.

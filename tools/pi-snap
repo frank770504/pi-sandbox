@@ -1,0 +1,297 @@
+#!/usr/bin/env bash
+# pi-snap — hardlink snapshot + management for pi's daily safety net.
+#
+# Usage: pi-snap help   (or run with no args to create a snapshot)
+set -euo pipefail
+
+SNAP_ROOT="${PI_SNAP_ROOT:-$HOME/.pi/snapshots}"
+KEEP="${PI_SNAP_KEEP:-10}"
+YES=0
+
+die()  { echo "pi-snap: error: $*" >&2; exit 1; }
+info() { echo "pi-snap: $*" >&2; }
+
+# Canonical (physical) absolute path for a directory.
+resolve_dir() {
+  local d="${1:-$PWD}"
+  [ -d "$d" ] || die "not a directory: $d"
+  ( cd "$d" && pwd -P )
+}
+
+key_of()   { printf '%s' "$1" | sed 's|/|_|g'; }
+base_of()  { printf '%s/%s' "$SNAP_ROOT" "$(key_of "$1")"; }
+latest_of(){ printf '%s/latest' "$(base_of "$1")"; }
+ts()       { date +%Y%m%d-%H%M%S.%N; }
+
+EXCLUDES=(
+  --exclude=.git
+  --exclude=node_modules
+  --exclude=.venv
+  --exclude=venv
+  --exclude=__pycache__
+  --exclude='*.pyc'
+  --exclude=build
+  --exclude=install
+  --exclude=log
+  --exclude=dist
+  --exclude=target
+  --exclude=.uv
+  --exclude=.cache
+)
+
+confirm() {
+  local msg="$1"
+  [ "$YES" = 1 ] && return 0
+  printf '%s [y/N] ' "$msg" >&2
+  local ans=""
+  read -r ans || return 1   # EOF / ctrl-d => no
+  case "$ans" in
+    y|Y|yes|YES) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Prune a project's snapshots to the newest N.
+prune_project() {
+  local base="$1" n="${2:-$KEEP}"
+  local snaps=()
+  mapfile -t snaps < <(find "$base" -maxdepth 1 -type d -name 'snap-*' -printf '%f\n' | sort)
+  if [ "${#snaps[@]}" -gt "$n" ]; then
+    local excess=$(( ${#snaps[@]} - n )) d
+    for d in "${snaps[@]:0:$excess}"; do
+      rm -rf "$base/$d"
+      info "pruned $base/$d"
+    done
+  fi
+}
+
+# Create a snapshot of a directory.
+do_create() {
+  local src;  src="$(resolve_dir "${1:-}")"
+  local base; base="$(base_of "$src")"
+  local latest="$base/latest"
+  local dest="$base/snap-$(ts)"
+  mkdir -p "$base"
+  printf '%s\n' "$src" > "$base/.source"   # metadata: source path
+  local link_args=()
+  if [ -e "$latest" ] || [ -L "$latest" ]; then
+    link_args=(--link-dest="$(readlink -f "$latest")")
+  fi
+  rsync -a --delete "${EXCLUDES[@]}" "${link_args[@]}" "$src/" "$dest/"
+  ln -sfn "$dest" "$latest"
+  prune_project "$base" "$KEEP"
+  echo "$dest"
+}
+
+# Resolve a snapshot ref: "latest", a basename in the current project, or a path.
+# Always returns the canonical snapshot directory (under SNAP_ROOT).
+resolve_snap() {
+  local ref="$1"
+  local proj; proj="$(resolve_dir "${2:-$PWD}")"
+  if [ "$ref" = "latest" ]; then
+    local lp; lp="$(latest_of "$proj")"
+    ref="$(readlink -f "$lp")"
+    [ -d "$ref" ] || die "no latest snapshot for $proj"
+  else
+    case "$ref" in
+      /*) ;;
+      *)  ref="$(base_of "$proj")/$ref" ;;
+    esac
+    ref="$(readlink -f "$ref")"
+    [ -d "$ref" ] || die "snapshot not found: $ref"
+  fi
+  case "$ref" in
+    "$SNAP_ROOT"/*) ;;
+    *) die "refusing: '$ref' is outside the snapshot store ($SNAP_ROOT)" ;;
+  esac
+  printf '%s' "$ref"
+}
+
+cmd_list() {
+  if [ "${1:-}" = "--all" ]; then
+    [ -d "$SNAP_ROOT" ] || die "no snapshot store at $SNAP_ROOT"
+    local proj
+    for proj in "$SNAP_ROOT"/*/; do
+      [ -d "$proj" ] || continue
+      local src="(unknown)"; [ -f "$proj/.source" ] && src="$(cat "$proj/.source")"
+      local n; n="$(find "$proj" -maxdepth 1 -type d -name 'snap-*' | wc -l)"
+      printf '%-40s %4s snapshots  <- %s\n' "$(basename "$proj")" "$n" "$src"
+    done
+    return
+  fi
+
+  local src;  src="$(resolve_dir "${1:-$PWD}")"
+  local base; base="$(base_of "$src")"
+  [ -d "$base" ] || die "no snapshots for $src"
+  local latest_target; latest_target="$(readlink -f "$base/latest" 2>/dev/null || true)"
+  local snaps=()
+  mapfile -t snaps < <(find "$base" -maxdepth 1 -type d -name 'snap-*' -printf '%f\n' | sort)
+  [ "${#snaps[@]}" -gt 0 ] || die "no snapshots for $src"
+  printf 'project: %s\n' "$src"
+  printf 'store:   %s\n' "$base"
+  local s
+  for s in "${snaps[@]}"; do
+    local mark=" "
+    [ "$base/$s" = "$latest_target" ] && mark="*"
+    local sz; sz="$(du -sh "$base/$s" 2>/dev/null | cut -f1)"
+    printf '  %s %-24s %6s\n' "$mark" "${s#snap-}" "$sz"
+  done
+  printf '(* = latest; sizes are apparent — shared files may be counted per snapshot)\n'
+}
+
+cmd_size() {
+  if [ "${1:-}" = "--all" ]; then
+    [ -d "$SNAP_ROOT" ] || die "no snapshot store at $SNAP_ROOT"
+    local proj
+    for proj in "$SNAP_ROOT"/*/; do
+      [ -d "$proj" ] || continue
+      local src="(unknown)"; [ -f "$proj/.source" ] && src="$(cat "$proj/.source")"
+      local total; total="$(du -sh "$proj" 2>/dev/null | cut -f1)"
+      local n; n="$(find "$proj" -maxdepth 1 -type d -name 'snap-*' | wc -l)"
+      printf '%-40s %4s snaps  %6s  %s\n' "$(basename "$proj")" "$n" "$total" "$src"
+    done
+    local grand; grand="$(du -sh "$SNAP_ROOT" 2>/dev/null | cut -f1)"
+    printf 'TOTAL: %s (deduplicated)\n' "$grand"
+    return
+  fi
+
+  local src;  src="$(resolve_dir "${1:-$PWD}")"
+  local base; base="$(base_of "$src")"
+  [ -d "$base" ] || die "no snapshots for $src"
+  local total; total="$(du -sh "$base" 2>/dev/null | cut -f1)"
+  local n; n="$(find "$base" -maxdepth 1 -type d -name 'snap-*' | wc -l)"
+  printf '%s: %s snapshots, %s on disk (deduplicated)\n' "$src" "$n" "$total"
+}
+
+cmd_diff() {
+  local snap; snap="$(resolve_snap "${1:-latest}" "$PWD")"
+  local target; target="$(resolve_dir "${2:-$PWD}")"
+  local out
+  out="$(rsync -ain --delete "${EXCLUDES[@]}" "$snap/" "$target/" 2>&1)" || true
+  if [ -z "$out" ]; then
+    info "no differences: $target matches $snap"
+  else
+    printf '%s\n' "$out"
+  fi
+}
+
+cmd_restore() {
+  local ref="${1:-latest}"; shift || true
+  local snap; snap="$(resolve_snap "$ref" "$PWD")"
+  local target="$PWD"
+  if [ "${1:-}" = "--into" ]; then
+    shift || true
+    target="$(resolve_dir "${1:-$PWD}")"
+  fi
+  info "snapshotting current state of $target before restore..."
+  do_create "$target" >/dev/null
+  rsync -a --delete "${EXCLUDES[@]}" "$snap/" "$target/"
+  info "restored $target from $snap"
+}
+
+cmd_rm() {
+  local ref="${1:-}"; [ -n "$ref" ] || die "usage: pi-snap rm <snap|latest>"
+  local snap; snap="$(resolve_snap "$ref" "$PWD")"
+  local base; base="$(dirname "$snap")"
+  local latest="$base/latest" was_latest=0
+  if [ -L "$latest" ] && [ "$(readlink -f "$latest")" = "$snap" ]; then
+    was_latest=1
+  fi
+  confirm "Delete snapshot $snap?" || { info "cancelled"; exit 0; }
+  rm -rf "$snap"
+  if [ "$was_latest" = 1 ]; then
+    local newest; newest="$(find "$base" -maxdepth 1 -type d -name 'snap-*' -printf '%f\n' | sort | tail -1)"
+    if [ -n "$newest" ]; then
+      ln -sfn "$base/$newest" "$latest"
+    else
+      rm -f "$latest"
+    fi
+  fi
+  info "deleted $snap"
+}
+
+cmd_prune() {
+  local n="$KEEP" dir="$PWD"
+  if [ -n "${1:-}" ] && [[ "${1:-}" =~ ^[0-9]+$ ]]; then n="$1"; shift || true; fi
+  [ -n "${1:-}" ] && dir="$1"
+  local src;  src="$(resolve_dir "$dir")"
+  local base; base="$(base_of "$src")"
+  [ -d "$base" ] || die "no snapshots for $src"
+  prune_project "$base" "$n"
+  info "pruned $base to $n snapshots"
+}
+
+cmd_clean() {
+  [ -d "$SNAP_ROOT" ] || die "no snapshot store at $SNAP_ROOT"
+  local all=0
+  [ "${1:-}" = "--all" ] && all=1
+  local removed=0 proj
+  for proj in "$SNAP_ROOT"/*/; do
+    [ -d "$proj" ] || continue
+    local src=""; [ -f "$proj/.source" ] && src="$(cat "$proj/.source")"
+    local orphan=0
+    if [ "$all" = 1 ]; then orphan=1
+    elif [ -n "$src" ] && [ ! -d "$src" ]; then orphan=1
+    fi
+    if [ "$orphan" = 1 ]; then
+      local msg
+      if [ "$all" = 1 ]; then msg="Delete ALL snapshots in $proj?"
+      else msg="Delete orphaned snapshot project $proj (source: ${src:-unknown})?"; fi
+      confirm "$msg" || { info "skip $proj"; continue; }
+      rm -rf "$proj"
+      info "removed $proj"
+      removed=$((removed+1))
+    fi
+  done
+  info "removed $removed project(s)"
+}
+
+usage() {
+  cat <<'EOF'
+pi-snap — hardlink snapshot + management for pi's daily safety net
+
+Usage:
+  pi-snap [dir]                     create a snapshot of dir (default: cwd)
+  pi-snap list [dir|--all]          list snapshots (marker * = latest)
+  pi-snap size [dir|--all]          disk usage, deduplicated per project
+  pi-snap diff <snap> [dir]         preview what restore would change vs dir (default cwd)
+  pi-snap restore <snap> [--into dir]  restore dir to snapshot (auto-snapshots first)
+  pi-snap rm <snap>                 delete one snapshot (repairs latest)
+  pi-snap prune [N] [dir]           prune to N snapshots (default 10)
+  pi-snap clean [--all]             remove orphaned projects; --all wipes the store
+  pi-snap help                      this help
+
+<snap> may be "latest", a snapshot basename within the current project, or an
+absolute path to a snapshot directory.
+
+Global flag: -y / --yes  skip confirmation prompts (rm, clean).
+Environment: PI_SNAP_ROOT overrides the store location; PI_SNAP_KEEP overrides
+the default snapshot count.
+EOF
+}
+
+# --- arg parsing ---
+args=("$@")
+filtered=()
+for a in "${args[@]}"; do
+  case "$a" in
+    -y|--yes) YES=1 ;;
+    *) filtered+=("$a") ;;
+  esac
+done
+set -- "${filtered[@]}"
+cmd="${1:-create}"
+shift || true
+
+case "$cmd" in
+  create|snap)              do_create "${1:-}" ;;
+  list)                     cmd_list "${1:-}" ;;
+  size)                     cmd_size "${1:-}" ;;
+  diff)                     cmd_diff "${1:-latest}" "${2:-$PWD}" ;;
+  restore)                  cmd_restore "$@" ;;
+  rm|remove|delete)         cmd_rm "${1:-}" ;;
+  prune)                    cmd_prune "$@" ;;
+  clean)                    cmd_clean "${1:-}" ;;
+  help|-h|--help)           usage ;;
+  *)                        do_create "$cmd" ;;   # legacy: pi-snap <path>
+esac

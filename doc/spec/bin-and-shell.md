@@ -1,46 +1,81 @@
 # Spec — Helper Scripts & Shell Alias
 
-## 1. `~/.pi/agent/bin/pi-snap` (custom)
+## 1. `pi-snap` — snapshot + management CLI
 
-Hardlink snapshot script — the rollback layer of the daily sandbox.
+Source of truth: `tools/pi-snap` (this repo). Installed to
+`~/.pi/agent/bin/pi-snap` by `install.sh`.
 
 ```
-Usage: pi-snap [project-dir]     (defaults to $PWD)
+Usage:
+  pi-snap [dir]                     create a snapshot of dir (default: cwd)
+  pi-snap list [dir|--all]          list snapshots (marker * = latest)
+  pi-snap size [dir|--all]          disk usage, deduplicated per project
+  pi-snap diff <snap> [dir]         preview what restore would change vs dir (default cwd)
+  pi-snap restore <snap> [--into dir]  restore dir to snapshot (auto-snapshots first)
+  pi-snap rm <snap>                 delete one snapshot (repairs latest)
+  pi-snap prune [N] [dir]           prune to N snapshots (default 10)
+  pi-snap clean [--all]             remove orphaned projects; --all wipes the store
+  pi-snap help                      this help
 ```
 
-### Behavior
+### Snapshot reference (`<snap>`)
 
-1. Canonicalize the project dir.
-2. Project key = absolute path with `/` → `_` (e.g. `/home/x/y` → `_home_x_y`).
-3. Snapshot root = `~/.pi/snapshots/<key>/` (override with `PI_SNAP_ROOT`).
-4. Snapshot into `snap-<timestamp>/` (nanosecond timestamp, collision-free).
-5. `rsync -a --delete --link-dest=<latest>` — unchanged files are hardlinked,
-   so later snapshots cost only changed-file disk space.
-6. Repoint `latest` symlink to the new snapshot.
-7. Prune to last **10** snapshots (`PI_SNAP_KEEP` overrides).
+`latest`, a snapshot basename within the current project, or an absolute path to
+a snapshot directory. Refuses anything outside the snapshot store.
 
-### Exclusions (regenerable artifacts, never snapshotted)
+### Store layout
 
-`.git`, `node_modules`, `.venv`, `venv`, `__pycache__`, `*.pyc`, `build`,
-`install`, `log`, `dist`, `target`, `.uv`, `.cache`
+```
+~/.pi/snapshots/<project-key>/
+  .source                       # canonical source path (metadata)
+  latest -> snap-<newest>       # symlink
+  snap-<timestamp>/             # hardlink snapshots
+```
 
-### Invocation
+- Project key = absolute path with `/` → `_` (e.g. `/home/x/y` → `_home_x_y`).
+- Exclusions (never snapshotted): `.git`, `node_modules`, `.venv`, `venv`,
+  `__pycache__`, `*.pyc`, `build`, `install`, `log`, `dist`, `target`, `.uv`,
+  `.cache`.
+- Retention: last **10** per project (auto-pruned on create; `prune` overrides).
 
-- Automatic: `session-snapshot` extension on `session_start`.
-- Manual: `pi-snap` (see alias below).
+### Safety properties
 
-## 2. `~/.pi/agent/bin/fd`
+- `restore` always takes a fresh snapshot of the target **first**, so restore is
+  reversible; the pre-restore state becomes the newest snapshot.
+- `restore` uses the same exclusions + `--delete`, so excluded dirs (`.git`,
+  `node_modules`, …) are never deleted, while everything else is made to match
+  the snapshot.
+- `rm`/`clean` confirm before deleting unless `-y`/`--yes`; `rm` only touches
+  paths under the store (containment check).
+- `clean` removes only projects whose recorded `.source` no longer exists.
+  Legacy dirs without `.source` are skipped (use `--all` to force).
 
-Prebuilt `fd` binary (fast `find` alternative), present in the agent `bin/`.
-Not user-modified.
+### Environment
 
-## 3. `~/.bashrc` — shell alias
+- `PI_SNAP_ROOT` — store location (default `~/.pi/snapshots`).
+- `PI_SNAP_KEEP` — default snapshot count (default `10`).
+
+## 2. `install.sh` (repo root)
+
+Installs `tools/pi-snap` → `~/.pi/agent/bin/pi-snap` (timestamped backup of any
+existing file), `chmod +x`, and adds the `pi-snap` alias to `~/.bashrc`
+idempotently.
 
 ```bash
-# pi-snap: manual checkpoint before risky pi operations (daily sandbox safety net)
+./install.sh
+```
+
+## 3. `~/.pi/agent/bin/fd`
+
+Prebuilt `fd` binary (fast `find` alternative). Not user-modified.
+
+## 4. `~/.bashrc` — shell alias
+
+```bash
+# pi-snap: snapshot + management for pi's daily safety net
 alias pi-snap='~/.pi/agent/bin/pi-snap'
 ```
 
-- Applies to the user's interactive shell (run `source ~/.bashrc` to load).
-- Note: pi's own `bash` tool runs non-interactive and does **not** expand
-  aliases; `pi-snap` is meant for the human, not the agent.
+- Applies to the user's interactive shell (`source ~/.bashrc` to load).
+- pi's own `bash` tool is non-interactive and does not expand aliases; `pi-snap`
+  is meant for the human, not the agent.
