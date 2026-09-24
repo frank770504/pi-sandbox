@@ -8,7 +8,8 @@
   "defaultProvider": "openrouter",
   "defaultModel": "deepseek/deepseek-v4-pro-0813",
   "defaultThinkingLevel": "high",
-  "defaultProjectTrust": "ask"
+  "defaultProjectTrust": "ask",
+  "packages": ["npm:pi-jev"]
 }
 ```
 
@@ -19,6 +20,7 @@
 | `defaultModel` | `deepseek/deepseek-v4-pro-0813` | Default model. |
 | `defaultThinkingLevel` | `high` | Default thinking/effort level. |
 | `defaultProjectTrust` | `ask` | Input-loading guard: prompt once per new project before loading `.pi`/`.agents` resources. |
+| `packages` | `["npm:pi-jev"]` | Loads pi-jev's tools and commands in Pi sessions. |
 
 ### Project trust semantics
 
@@ -31,6 +33,22 @@
   Override per-run with `-a`/`--approve` or `-na`/`--no-approve`.
 - Trust is **not** a sandbox — it only guards loading of project-local settings,
   extensions, skills, prompts, themes, and system-prompt files.
+
+## pi-jev package and credentials
+
+The `packages` setting installs/loads `npm:pi-jev`, which provides semantic tool
+and skill discovery, typed evaluations, and the `pi-jev-gate` CLI. To add it on
+a new machine, install the package with `pi install npm:pi-jev` or add it to the
+`packages` array in `~/.pi/agent/settings.json`.
+
+Jev requests require a TypeSafe API key. Provide it through `TYPESAFE_API_KEY`
+or store it in `~/.pi/agent/secrets/typesafe_api_key`. **Never commit the key
+into this repository.** Verify setup in Pi with `/jev status`.
+
+The development pilot uses Jev manually: `jev_evaluate` for a bounded
+pre-coding risk/validation assessment, and
+`npx pi-jev-gate -c '<acceptance criterion>' --diff` for an advisory post-change
+diff check. Automatic modes are not enabled by this configuration.
 
 ## 2. `~/.pi/agent/auth.json` (structure only — values redacted)
 
