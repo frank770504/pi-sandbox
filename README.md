@@ -115,7 +115,7 @@ any path outside `~/.pi/snapshots`.
 | Spec | Live config file | What it configures |
 |---|---|---|
 | [settings.md](doc/spec/settings.md) | `~/.pi/agent/settings.json` | provider, model, thinking level, project trust, pi-jev package and setup |
-| [agent-instructions.md](doc/spec/agent-instructions.md) | `~/.pi/agent/AGENT.md` | global system prompt (approval flow, pi-jev bug-fix pilot, delete rules) |
+| [agent-instructions.md](doc/spec/agent-instructions.md) | `~/.pi/agent/AGENT.md` | global system prompt (approval flow, repo-aware pi-jev planning loop, validation and delete rules) |
 | [keybindings.md](doc/spec/keybindings.md) | `~/.pi/agent/keybindings.json` | vim-style TUI bindings |
 | [extensions.md](doc/spec/extensions.md) | `~/.pi/agent/extensions/*.ts` | delete-guard, session-snapshot |
 | [skills.md](doc/spec/skills.md) | `~/.pi/agent/skills/` | installed skills |
@@ -124,10 +124,10 @@ any path outside `~/.pi/snapshots`.
 These specs record the current config (with secrets redacted), so they are the
 reference for replicating this setup on another Pi installation. For pi-jev,
 add `npm:pi-jev` to the packages setting, configure a TypeSafe API key outside
-the repo (see [settings.md](doc/spec/settings.md)), and copy the pilot workflow
-from [agent-instructions.md](doc/spec/agent-instructions.md) into the global
-instructions file. Verify with `/jev status`. To apply a spec, create/copy the
-documented content into the corresponding live file.
+the repo (see [settings.md](doc/spec/settings.md)), and copy the repo-aware
+planning and validation workflow from [agent-instructions.md](doc/spec/agent-instructions.md)
+into the global instructions file. Verify with `/jev status`. To apply a spec,
+create/copy the documented content into the corresponding live file.
 
 > **Note:** `session-snapshot` (see `doc/spec/extensions.md`) calls `pi-snap` on
 > every session start, so snapshots happen automatically — you only need to run

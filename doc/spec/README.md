@@ -1,7 +1,7 @@
 # Pi Custom Configuration — Spec Index
 
 Machine: local development machine (Ubuntu 22.04, x86_64)
-Updated: 2025-09-07
+Updated: 2026-09-23
 
 This directory documents **all custom pi configuration on this machine** — the
 delta from pi's stock defaults. Secrets are redacted; structure is recorded.
@@ -26,8 +26,8 @@ delta from pi's stock defaults. Secrets are redacted; structure is recorded.
 1. **Provider/model**: OpenRouter (`deepseek/deepseek-v4-pro-0813`), plus Google.
 2. **Thinking level**: `high`.
 3. **Project trust**: explicit `ask` (default, but pinned).
-4. **Global system prompt** (`AGENT.md`): 3-step Align→Plan→Wait approval flow, pi-jev bug-fix pilot, and delete-permission rule.
-5. **Pi package**: `npm:pi-jev`, configured for manual typed evaluation and advisory gate checks; TypeSafe API key is kept outside the repo.
+4. **Global system prompt** (`AGENT.md`): Align→Plan→Wait with read-only repo inspection and bounded pre-approval pi-jev planning scores, plus post-approval checks and delete rules.
+5. **Pi package**: `npm:pi-jev`, configured for privacy-filtered typed evaluations, conditional discovery, and advisory gate checks; TypeSafe API key is kept outside the repo.
 6. **Extensions**: `delete-guard` (destructive-op guard) + `session-snapshot` (rollback snapshots).
 7. **Keybindings**: vim-style cursor + `alt+enter` newline.
 8. **Skills**: catch-up-project, code-review, grill-me, science-skills-common, uv.
