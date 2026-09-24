@@ -1,10 +1,10 @@
-# Pi Custom Configuration — Spec Index
+# Pi and Antigravity Custom Configuration — Spec Index
 
 Machine: local development machine (Ubuntu 22.04, x86_64)
 Updated: 2026-09-23
 
-This directory documents **all custom pi configuration on this machine** — the
-delta from pi's stock defaults. Secrets are redacted; structure is recorded.
+This directory documents custom Pi and Antigravity configuration on this
+machine. Secrets are redacted; structure is recorded.
 
 ## Layout of pi config
 
@@ -16,6 +16,7 @@ delta from pi's stock defaults. Secrets are redacted; structure is recorded.
 | [extensions.md](extensions.md) | Custom extensions | `~/.pi/agent/extensions/*.ts` |
 | [skills.md](skills.md) | Installed skills | `~/.pi/agent/skills/` |
 | [bin-and-shell.md](bin-and-shell.md) | Helper scripts & shell alias | `tools/pi-snap`, `install.sh`, `~/.pi/agent/bin/`, `~/.bashrc` |
+| [antigravity.md](antigravity.md) | AGY global instructions, skill, TypeSafe MCP integration | `tools/antigravity/`, `~/.gemini/GEMINI.md`, `~/.gemini/config/skills/`, AGY MCP settings |
 
 ## Related design doc
 
@@ -32,3 +33,4 @@ delta from pi's stock defaults. Secrets are redacted; structure is recorded.
 7. **Keybindings**: vim-style cursor + `alt+enter` newline.
 8. **Skills**: catch-up-project, code-review, grill-me, science-skills-common, uv.
 9. **Helpers**: `pi-snap` snapshot/management CLI (repo `tools/pi-snap`, deployed by `install.sh`) + `pi-snap` shell alias + `fd` binary.
+10. **Antigravity CLI**: repo-managed Jev development skill and local TypeSafe MCP adapter, installed by `tools/antigravity/install-agy.sh`.

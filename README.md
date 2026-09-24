@@ -17,7 +17,8 @@ hardlink-snapshot tool that lets you undo accidental damage.
 .
 ├── install.sh                      # install pi-snap + shell alias
 ├── tools/
-│   └── pi-snap                     # snapshot + management CLI (source of truth)
+│   ├── pi-snap                     # snapshot + management CLI (source of truth)
+│   └── antigravity/                # AGY Jev MCP adapter, skill source, installer
 └── doc/
     ├── plan/archive/…              # approved sandbox design (decision record)
     └── spec/…                      # specs of all custom pi config on this machine
@@ -47,6 +48,22 @@ pi-snap help
 `install.sh` copies `tools/pi-snap` to `~/.pi/agent/bin/pi-snap` (backing up any
 existing file), makes it executable, and adds the `pi-snap` alias to `~/.bashrc`
 idempotently.
+
+---
+
+## Install the AGY Jev workflow
+
+```bash
+bash tools/antigravity/install-agy.sh
+agy mcp list
+```
+
+This installs a repo-managed Antigravity skill and registers a local stdio MCP
+adapter for TypeSafe Jev. Configure `TYPESAFE_API_KEY` in the environment used
+to launch `agy`, or set `TYPESAFE_API_KEY_FILE` to an owner-only secret file
+before running the installer. It stores only that file path, never the key, in
+AGY MCP configuration or the repository.
+See [antigravity.md](doc/spec/antigravity.md) for details.
 
 ---
 
@@ -120,6 +137,7 @@ any path outside `~/.pi/snapshots`.
 | [extensions.md](doc/spec/extensions.md) | `~/.pi/agent/extensions/*.ts` | delete-guard, session-snapshot |
 | [skills.md](doc/spec/skills.md) | `~/.pi/agent/skills/` | installed skills |
 | [bin-and-shell.md](doc/spec/bin-and-shell.md) | `tools/pi-snap`, `~/.pi/agent/bin/`, `~/.bashrc` | pi-snap + alias |
+| [antigravity.md](doc/spec/antigravity.md) | `~/.gemini/GEMINI.md`, AGY global skill, MCP config | Antigravity CLI Jev workflow and local TypeSafe MCP adapter |
 
 These specs record the current config (with secrets redacted), so they are the
 reference for replicating this setup on another Pi installation. For pi-jev,
