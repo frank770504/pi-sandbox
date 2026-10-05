@@ -4,9 +4,9 @@
 
 ```json
 {
-  "lastChangelogVersion": "0.85.1",
+  "lastChangelogVersion": "1.0.2",
   "defaultProvider": "openrouter",
-  "defaultModel": "deepseek/deepseek-v4-pro-0813",
+  "defaultModel": "cohere/north-mini-code:free",
   "defaultThinkingLevel": "high",
   "defaultProjectTrust": "ask",
   "packages": ["npm:pi-jev"]
@@ -15,12 +15,28 @@
 
 | Field | Value | Meaning |
 |---|---|---|
-| `lastChangelogVersion` | `0.85.1` | Tracks last-shown changelog version (pi-managed, not user-set). |
+| `lastChangelogVersion` | `1.0.2` | Tracks last-shown changelog version (pi-managed, not user-set). |
 | `defaultProvider` | `openrouter` | Default model provider for new sessions. |
-| `defaultModel` | `deepseek/deepseek-v4-pro-0813` | Default model. |
+| `defaultModel` | `cohere/north-mini-code:free` | Default model. |
 | `defaultThinkingLevel` | `high` | Default thinking/effort level. |
 | `defaultProjectTrust` | `ask` | Input-loading guard: prompt once per new project before loading `.pi`/`.agents` resources. |
 | `packages` | `["npm:pi-jev"]` | Loads pi-jev's tools and commands in Pi sessions. |
+
+## 2. Project default model — `.pi/settings.json`
+
+This repository sets the same default locally so new sessions opened in this
+project use Cohere North Mini Code through OpenRouter:
+
+```json
+{
+  "defaultProvider": "openrouter",
+  "defaultModel": "cohere/north-mini-code:free"
+}
+```
+
+Pi loads project settings only after the project is trusted. Since this model is
+also the global default above, the selection remains consistent if the project
+setting has not yet been trusted.
 
 ### Project trust semantics
 
@@ -88,7 +104,7 @@ TypeSafe. Keep planning scores, gate probability, and test results separate in
 reports. Automatic-mode preferences are session/runtime choices; no automatic
 mode is enabled by this settings configuration.
 
-## 2. `~/.pi/agent/auth.json` (structure only — values redacted)
+## 3. `~/.pi/agent/auth.json` (structure only — values redacted)
 
 ```json
 {
@@ -106,7 +122,8 @@ Security: keys live on the host under the user account. Per the sandbox plan,
 they remain here for the trusted daily tier; the untrusted Docker tier will use
 a separate scoped key and never mount this file.
 
-## 3. `~/.pi/agent/trust.json`
+## 4. `~/.pi/agent/trust.json`
 
-Currently absent/empty — no saved project-trust decisions yet. First trust
-prompt in each project will populate it.
+A saved decision exists for another project, but none is recorded for this
+repository. Pi may prompt for trust the first time it loads this project's
+`.pi/settings.json`; that decision is stored here.

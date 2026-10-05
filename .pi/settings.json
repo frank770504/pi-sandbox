@@ -1,0 +1,4 @@
+{
+  "defaultProvider": "openrouter",
+  "defaultModel": "cohere/north-mini-code:free"
+}

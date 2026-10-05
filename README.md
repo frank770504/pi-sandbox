@@ -18,6 +18,7 @@ hardlink-snapshot tool that lets you undo accidental damage.
 ├── install.sh                      # install pi-snap + shell alias
 ├── tools/
 │   ├── pi-snap                     # snapshot + management CLI (source of truth)
+│   ├── popular-models/             # read-only top-model widget + installer
 │   └── antigravity/                # AGY Jev MCP adapter, skill source, installer
 └── doc/
     ├── plan/archive/…              # approved sandbox design (decision record)
@@ -48,6 +49,21 @@ pi-snap help
 `install.sh` copies `tools/pi-snap` to `~/.pi/agent/bin/pi-snap` (backing up any
 existing file), makes it executable, and adds the `pi-snap` alias to `~/.bashrc`
 idempotently.
+
+---
+
+## Install the popular-models widget
+
+```bash
+bash tools/popular-models/install.sh          # copy into ~/.pi/agent/extensions/
+bash tools/popular-models/install.sh --link   # symlink the repo source
+```
+
+On startup and when creating a new session, this read-only extension displays
+OpenRouter's ten most-used models for programming (weekly tool-call usage) in a
+widget above the editor. It never opens a selector or changes the active model.
+The ranking is cached for 12 hours; if refresh fails, the previous cached list
+is shown. See [extensions.md](doc/spec/extensions.md) for details.
 
 ---
 
@@ -126,15 +142,16 @@ any path outside `~/.pi/snapshots`.
 
 ## Configuring pi with this repo
 
-`install.sh` handles the `pi-snap` tool. The rest of pi's custom config lives in
-`~/.pi/agent/` and is **documented** (not yet vendored) in `doc/spec/`:
+`install.sh` handles the `pi-snap` tool. User-level pi config lives in
+`~/.pi/agent/` and is documented in `doc/spec/`; this repo also commits its
+project-specific default model in `.pi/settings.json`:
 
 | Spec | Live config file | What it configures |
 |---|---|---|
-| [settings.md](doc/spec/settings.md) | `~/.pi/agent/settings.json` | provider, model, thinking level, project trust, pi-jev package and setup |
+| [settings.md](doc/spec/settings.md) | `~/.pi/agent/settings.json`, `.pi/settings.json` | provider/model defaults, thinking level, project trust, pi-jev package and setup |
 | [agent-instructions.md](doc/spec/agent-instructions.md) | `~/.pi/agent/AGENT.md` | global system prompt (approval flow, repo-aware pi-jev planning loop, validation and delete rules) |
 | [keybindings.md](doc/spec/keybindings.md) | `~/.pi/agent/keybindings.json` | vim-style TUI bindings |
-| [extensions.md](doc/spec/extensions.md) | `~/.pi/agent/extensions/*.ts` | delete-guard, session-snapshot |
+| [extensions.md](doc/spec/extensions.md) | `~/.pi/agent/extensions/*.ts` | delete-guard, session-snapshot, popular-models |
 | [skills.md](doc/spec/skills.md) | `~/.pi/agent/skills/` | installed skills |
 | [bin-and-shell.md](doc/spec/bin-and-shell.md) | `tools/pi-snap`, `~/.pi/agent/bin/`, `~/.bashrc` | pi-snap + alias |
 | [antigravity.md](doc/spec/antigravity.md) | `~/.gemini/GEMINI.md`, AGY global skill, MCP config | Antigravity CLI Jev workflow and local TypeSafe MCP adapter |

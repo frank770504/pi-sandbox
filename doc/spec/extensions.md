@@ -1,6 +1,6 @@
 # Spec — Extensions
 
-Source: `~/.pi/agent/extensions/`
+Source: `~/.pi/agent/extensions/` (with `popular-models.ts` vendored under `tools/popular-models/`).
 
 ## 1. `delete-guard.ts` — destructive-operation guard
 
@@ -48,3 +48,25 @@ before work begins.
 Align→Plan→Wait flow; it only *reads* the project (plus writes under
 `~/.pi/snapshots/`), so it does not violate the AGENT.md no-edit-before-approval
 rule.
+
+## 3. `popular-models.ts` — read-only top-model widget
+
+Vendored in `tools/popular-models/` with an installer. Install with:
+
+```bash
+bash tools/popular-models/install.sh          # copy into ~/.pi/agent/extensions/
+bash tools/popular-models/install.sh --link   # symlink the repo source
+```
+
+On startup and for each newly created session, a widget above the editor shows
+the **top ten OpenRouter models by weekly tool-call usage**. The ranking is
+read-only: there is no selection dialog, and it never changes the active model.
+The widget lists model IDs and their weekly token usage. It is not shown on
+reload, resume, fork, or in modes without a UI.
+
+The ranking comes from
+`https://openrouter.ai/api/frontend/v1/rankings/tools`; the latest weekly bucket
+is sorted by usage, the `Others` bucket is ignored, and dated point releases are
+deduplicated by their base model ID. Results are cached at
+`~/.pi/agent/popular-models-cache.json` for 12 hours. If a fetch fails, the last
+cached list is shown; if there is no cache, a warning is displayed.
