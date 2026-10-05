@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install the read-only popular-models widget into ~/.pi/agent/extensions/.
+# Install the read-only popular-models conversation-info extension into ~/.pi/agent/extensions/.
 #
 # Usage: install.sh [--link]
 #   --link    Symlink the extension so repo edits apply immediately.
@@ -34,4 +34,4 @@ else
   echo "install: copied: $DEST"
 fi
 
-echo "install: done. The top ten list appears on startup and new sessions."
+echo "install: done. The top ten list is added to the conversation on startup and new sessions."

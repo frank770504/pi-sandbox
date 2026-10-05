@@ -49,7 +49,7 @@ Align→Plan→Wait flow; it only *reads* the project (plus writes under
 `~/.pi/snapshots/`), so it does not violate the AGENT.md no-edit-before-approval
 rule.
 
-## 3. `popular-models.ts` — read-only top-model widget
+## 3. `popular-models.ts` — read-only top-model conversation info
 
 Vendored in `tools/popular-models/` with an installer. Install with:
 
@@ -58,11 +58,14 @@ bash tools/popular-models/install.sh          # copy into ~/.pi/agent/extensions
 bash tools/popular-models/install.sh --link   # symlink the repo source
 ```
 
-On startup and for each newly created session, a widget above the editor shows
-the **top ten OpenRouter models by weekly tool-call usage**. The ranking is
-read-only: there is no selection dialog, and it never changes the active model.
-The widget lists model IDs and their weekly token usage. It is not shown on
-reload, resume, fork, or in modes without a UI.
+On startup and for each newly created session, a visible informational message
+is added to the conversation with the **top ten OpenRouter models by weekly
+tool-call usage**. It scrolls up with the transcript and participates in model
+context, but does not trigger an agent turn. The ranking is read-only: there is
+no selection dialog, and it never changes the active model. The message lists
+model IDs and their weekly token usage. A model change invalidates any in-flight
+ranking load; a message already added remains in conversation history. The list
+is not added on reload, resume, fork, or in modes without a UI.
 
 The ranking comes from
 `https://openrouter.ai/api/frontend/v1/rankings/tools`; the latest weekly bucket

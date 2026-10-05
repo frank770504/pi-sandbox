@@ -52,18 +52,19 @@ idempotently.
 
 ---
 
-## Install the popular-models widget
+## Install the popular-models conversation info
 
 ```bash
 bash tools/popular-models/install.sh          # copy into ~/.pi/agent/extensions/
 bash tools/popular-models/install.sh --link   # symlink the repo source
 ```
 
-On startup and when creating a new session, this read-only extension displays
-OpenRouter's ten most-used models for programming (weekly tool-call usage) in a
-widget above the editor. It never opens a selector or changes the active model.
-The ranking is cached for 12 hours; if refresh fails, the previous cached list
-is shown. See [extensions.md](doc/spec/extensions.md) for details.
+On startup and when creating a new session, this read-only extension adds
+OpenRouter's ten most-used models for programming (weekly tool-call usage) as an
+informational entry in the conversation, where it scrolls up with the transcript
+and is available in model context. It does not trigger a turn or change the
+active model. The ranking is cached for 12 hours; if refresh fails, the previous
+cached list is shown. See [extensions.md](doc/spec/extensions.md) for details.
 
 ---
 

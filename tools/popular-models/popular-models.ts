@@ -1,7 +1,6 @@
 /**
- * Display the ten most-used OpenRouter models for programming on new sessions.
- * This is a read-only widget: it never changes the active model or opens a
- * selection dialog.
+ * Add the ten most-used OpenRouter models for programming to the conversation
+ * on new sessions. This informational message never changes the active model.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -13,7 +12,7 @@ const RANKING_URL = "https://openrouter.ai/api/frontend/v1/rankings/tools";
 const FETCH_TIMEOUT_MS = 8_000;
 const CACHE_TTL_MS = 12 * 60 * 60 * 1_000;
 const MODEL_COUNT = 10;
-const WIDGET_KEY = "popular-models";
+const MESSAGE_TYPE = "popular-models";
 const OTHERS_BUCKET = "Others";
 
 interface PopularModel {
@@ -123,7 +122,11 @@ function formatTokens(tokens: number): string {
 	return String(Math.round(tokens));
 }
 
-async function updateWidget(ctx: ExtensionContext, isCurrent: () => boolean): Promise<void> {
+async function addRankingMessage(
+	pi: ExtensionAPI,
+	ctx: ExtensionContext,
+	isCurrent: () => boolean,
+): Promise<void> {
 	try {
 		const result = await loadPopularModels();
 		if (!isCurrent()) return;
@@ -134,7 +137,11 @@ async function updateWidget(ctx: ExtensionContext, isCurrent: () => boolean): Pr
 				`${String(index + 1).padStart(2, " ")}. ${model.id}  ·  ${formatTokens(model.tokens)} tokens`,
 			),
 		];
-		ctx.ui.setWidget(WIDGET_KEY, lines, { placement: "aboveEditor" });
+		pi.sendMessage({
+			customType: MESSAGE_TYPE,
+			content: lines.join("\n"),
+			display: true,
+		}, { triggerTurn: false });
 	} catch (error) {
 		if (!isCurrent()) return;
 		console.error(`popular-models: failed to load OpenRouter ranking: ${error}`);
@@ -149,10 +156,13 @@ export default function popularModels(pi: ExtensionAPI) {
 		const currentRequest = ++requestId;
 		if (!ctx.hasUI) return;
 
-		// Clear stale content when a session is resumed, forked, or reloaded.
-		ctx.ui.setWidget(WIDGET_KEY, undefined);
 		if (event.reason !== "startup" && event.reason !== "new") return;
 
-		void updateWidget(ctx, () => currentRequest === requestId);
+		void addRankingMessage(pi, ctx, () => currentRequest === requestId);
+	});
+
+	pi.on("model_select", () => {
+		// Preserve the existing guard against a pending load completing after a model change.
+		++requestId;
 	});
 }
