@@ -63,8 +63,10 @@ On startup and when creating a new session, this read-only extension adds
 OpenRouter's ten most-used models for programming (weekly tool-call usage) as an
 informational entry in the conversation, where it scrolls up with the transcript
 and is available in model context. It does not trigger a turn or change the
-active model. The ranking is cached for 12 hours; if refresh fails, the previous
-cached list is shown. See [extensions.md](doc/spec/extensions.md) for details.
+active model. Rankings and model details are cached for 12 hours; stale cached
+data is used when refresh fails, and unavailable details are marked `n/a` without
+hiding the ranking. The list includes input/output prices per million tokens and
+context size. See [extensions.md](doc/spec/extensions.md) for details.
 
 ---
 

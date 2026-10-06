@@ -62,14 +62,20 @@ On startup and for each newly created session, a visible informational message
 is added to the conversation with the **top ten OpenRouter models by weekly
 tool-call usage**. It scrolls up with the transcript and participates in model
 context, but does not trigger an agent turn. The ranking is read-only: there is
-no selection dialog, and it never changes the active model. The message lists
-model IDs and their weekly token usage. A model change invalidates any in-flight
+no selection dialog, and it never changes the active model. Each row includes
+the model ID, weekly usage, input/output prices in USD per million tokens, and
+context length when available. Missing catalog fields are marked `n/a`. A model
+change invalidates any in-flight
 ranking load; a message already added remains in conversation history. The list
 is not added on reload, resume, fork, or in modes without a UI.
 
 The ranking comes from
 `https://openrouter.ai/api/frontend/v1/rankings/tools`; the latest weekly bucket
 is sorted by usage, the `Others` bucket is ignored, and dated point releases are
-deduplicated by their base model ID. Results are cached at
-`~/.pi/agent/popular-models-cache.json` for 12 hours. If a fetch fails, the last
-cached list is shown; if there is no cache, a warning is displayed.
+deduplicated by their base model ID. Model names, token prices, and context
+length come from `https://openrouter.ai/api/v1/models`; prices are normalized
+from USD per token to USD per million tokens. Ranking data is cached at
+`~/.pi/agent/popular-models-cache.json` and model details at
+`~/.pi/agent/popular-models-metadata-cache.json`, both for 12 hours. When a
+refresh fails, stale cached data is used when available; missing model details do
+not prevent the ranking from appearing.
