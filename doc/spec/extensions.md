@@ -58,16 +58,18 @@ bash tools/popular-models/install.sh          # copy into ~/.pi/agent/extensions
 bash tools/popular-models/install.sh --link   # symlink the repo source
 ```
 
-On startup and for each newly created session, a visible informational message
-is added to the conversation with the **top ten OpenRouter models by weekly
-tool-call usage**. It scrolls up with the transcript and participates in model
-context, but does not trigger an agent turn. The ranking is read-only: there is
-no selection dialog, and it never changes the active model. Each row includes
-the model ID, weekly usage, input/output prices in USD per million tokens, and
-context length when available. Missing catalog fields are marked `n/a`. A model
-change invalidates any in-flight
-ranking load; a message already added remains in conversation history. The list
-is not added on reload, resume, fork, or in modes without a UI.
+On startup and for each newly created session, the extension appends a
+width-aware Markdown table to the TUI transcript with the **top ten OpenRouter
+models by weekly tool-call usage**. The table scrolls with conversation history,
+but is stored via `pi.appendEntry()` as a custom session entry and does **not**
+participate in LLM context. It is not injected into the prompt and does not
+trigger an agent turn. The ranking is read-only: it never changes the active
+model. Each row includes the model ID, weekly usage, input/output prices in USD
+per million tokens, and context length when available; missing catalog fields
+are marked `n/a`. A model change invalidates an in-flight ranking load, while an
+entry already appended remains in the transcript. The table is emitted only in
+interactive TUI startup/new sessions, not on reload, resume, fork, or in other
+modes.
 
 The ranking comes from
 `https://openrouter.ai/api/frontend/v1/rankings/tools`; the latest weekly bucket

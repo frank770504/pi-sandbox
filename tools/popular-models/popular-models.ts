@@ -1,19 +1,20 @@
 /**
- * Add the ten most-used OpenRouter models for programming to the conversation
- * on new sessions. This informational message never changes the active model.
+ * Render the ten most-used OpenRouter models as a TUI transcript table on new
+ * sessions. The custom session entry is excluded from LLM context.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import { getAgentDir, getMarkdownTheme } from "@earendil-works/pi-coding-agent";
+import { Box, Markdown, Text } from "@earendil-works/pi-tui";
 
 const RANKING_URL = "https://openrouter.ai/api/frontend/v1/rankings/tools";
 const MODEL_CATALOG_URL = "https://openrouter.ai/api/v1/models";
 const FETCH_TIMEOUT_MS = 8_000;
 const CACHE_TTL_MS = 12 * 60 * 60 * 1_000;
 const MODEL_COUNT = 10;
-const MESSAGE_TYPE = "popular-models";
+const ENTRY_TYPE = "popular-models-table";
 const OTHERS_BUCKET = "Others";
 
 interface PopularModel {
@@ -36,6 +37,11 @@ interface ModelMetadata {
 interface MetadataCacheSnapshot {
 	fetchedAt: number;
 	models: Record<string, ModelMetadata>;
+}
+
+interface PopularModelsEntryData {
+	rankingCached: boolean;
+	models: Array<PopularModel & { metadata?: ModelMetadata }>;
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -231,7 +237,33 @@ function formatTokens(tokens: number): string {
 	return String(Math.round(tokens));
 }
 
-async function addRankingMessage(
+function escapeTableCell(value: string): string {
+	return value.replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/[\r\n]+/g, " ");
+}
+
+function renderModelsTable(data: PopularModelsEntryData): string {
+	const rows = data.models.map((model, index) => {
+		const details = model.metadata;
+		const name = details?.name && details.name !== model.id ? ` (${details.name})` : "";
+		const values = [
+			String(index + 1),
+			`${model.id}${name}`,
+			`${formatTokens(model.tokens)} tokens`,
+			formatPricePerMillion(details?.promptPricePerToken),
+			formatPricePerMillion(details?.completionPricePerToken),
+			details?.contextLength ? formatTokens(details.contextLength) : "n/a",
+		];
+		return `| ${values.map(escapeTableCell).join(" | ")} |`;
+	});
+
+	return [
+		"| Rank | Model | Weekly usage | Input USD / 1M tokens | Output USD / 1M tokens | Context |",
+		"| ---: | :--- | ---: | ---: | ---: | ---: |",
+		...rows,
+	].join("\n");
+}
+
+async function appendRankingEntry(
 	pi: ExtensionAPI,
 	ctx: ExtensionContext,
 	isCurrent: () => boolean,
@@ -239,22 +271,10 @@ async function addRankingMessage(
 	try {
 		const [result, metadata] = await Promise.all([loadPopularModels(), loadModelMetadata()]);
 		if (!isCurrent()) return;
-		const cachedLabel = result.cached ? " (ranking cached)" : "";
-		const lines = [
-			`Top ${MODEL_COUNT} popular models · OpenRouter weekly tool-call usage · prices USD per 1M tokens${cachedLabel}`,
-			...result.models.map((model, index) => {
-				const details = metadata[model.id];
-				const displayName = details?.name && details.name !== model.id ? ` · ${details.name}` : "";
-				const context = details?.contextLength ? formatTokens(details.contextLength) : "n/a";
-				const prices = `input ${formatPricePerMillion(details?.promptPricePerToken)}/1M · output ${formatPricePerMillion(details?.completionPricePerToken)}/1M`;
-				return `${String(index + 1).padStart(2, " ")}. ${model.id}${displayName} · ${formatTokens(model.tokens)} weekly tokens · ${prices} · context ${context}`;
-			}),
-		];
-		pi.sendMessage({
-			customType: MESSAGE_TYPE,
-			content: lines.join("\n"),
-			display: true,
-		}, { triggerTurn: false });
+		pi.appendEntry<PopularModelsEntryData>(ENTRY_TYPE, {
+			rankingCached: result.cached,
+			models: result.models.map((model) => ({ ...model, metadata: metadata[model.id] })),
+		});
 	} catch (error) {
 		if (!isCurrent()) return;
 		console.error(`popular-models: failed to load OpenRouter ranking: ${error}`);
@@ -265,13 +285,26 @@ async function addRankingMessage(
 export default function popularModels(pi: ExtensionAPI) {
 	let requestId = 0;
 
+	pi.registerEntryRenderer<PopularModelsEntryData>(ENTRY_TYPE, (entry, _options, theme) => {
+		const data = entry.data;
+		if (!data || !Array.isArray(data.models)) {
+			return new Text(theme.fg("warning", "[popular models] Missing table data"), 0, 0);
+		}
+
+		const box = new Box(1, 1, (text) => theme.bg("customMessageBg", text));
+		const cachedLabel = data.rankingCached ? " · ranking cached" : "";
+		box.addChild(new Text(theme.fg("accent", `Top ${MODEL_COUNT} popular models${cachedLabel}`), 0, 0));
+		box.addChild(new Text(theme.fg("dim", "OpenRouter weekly tool-call usage · prices in USD per 1M tokens"), 0, 0));
+		box.addChild(new Markdown(renderModelsTable(data), 0, 0, getMarkdownTheme()));
+		return box;
+	});
+
 	pi.on("session_start", (event, ctx) => {
 		const currentRequest = ++requestId;
-		if (!ctx.hasUI) return;
-
+		if (ctx.mode !== "tui") return;
 		if (event.reason !== "startup" && event.reason !== "new") return;
 
-		void addRankingMessage(pi, ctx, () => currentRequest === requestId);
+		void appendRankingEntry(pi, ctx, () => currentRequest === requestId);
 	});
 
 	pi.on("model_select", () => {

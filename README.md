@@ -60,13 +60,13 @@ bash tools/popular-models/install.sh --link   # symlink the repo source
 ```
 
 On startup and when creating a new session, this read-only extension adds
-OpenRouter's ten most-used models for programming (weekly tool-call usage) as an
-informational entry in the conversation, where it scrolls up with the transcript
-and is available in model context. It does not trigger a turn or change the
-active model. Rankings and model details are cached for 12 hours; stale cached
-data is used when refresh fails, and unavailable details are marked `n/a` without
-hiding the ranking. The list includes input/output prices per million tokens and
-context size. See [extensions.md](doc/spec/extensions.md) for details.
+OpenRouter's ten most-used models for programming (weekly tool-call usage) as a
+width-aware table in the TUI transcript. It scrolls with the conversation but is
+stored as a custom session entry excluded from model context; the list is not
+injected into the prompt. It does not trigger a turn or change the active model.
+Rankings and model details are cached for 12 hours; stale data is used when
+refresh fails, and unavailable details are marked `n/a` without hiding the
+ranking. See [extensions.md](doc/spec/extensions.md) for details.
 
 ---
 
