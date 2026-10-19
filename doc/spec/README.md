@@ -1,36 +1,31 @@
-# Pi and Antigravity Custom Configuration — Spec Index
+# Pi and Antigravity Configuration — Spec Index
 
-Machine: local development machine (Ubuntu 22.04, x86_64)
-Updated: 2026-10-05
+Updated: 2026-10-19
 
-This directory documents custom Pi and Antigravity configuration on this
-machine. Secrets are redacted; structure is recorded.
+This repo describes and installs repo-managed Pi and Antigravity configuration. Secrets, auth state, trust decisions, user-specific model settings, and workspace lists remain outside the repo.
 
-## Layout of pi config
+## Specs
 
-| Spec | Covers | Source |
+| Spec | Covers | Canonical source / target |
 |---|---|---|
-| [settings.md](settings.md) | Global settings, project default model, providers, project trust, pi-jev package and setup | `~/.pi/agent/settings.json`, `.pi/settings.json`, `auth.json`, `trust.json` |
-| [keybindings.md](keybindings.md) | TUI editor/input keybindings | `~/.pi/agent/keybindings.json` |
-| [agent-instructions.md](agent-instructions.md) | Global system prompt | `~/.pi/agent/AGENT.md` |
-| [extensions.md](extensions.md) | Custom extensions, including the vendored popular-models widget | `~/.pi/agent/extensions/*.ts`, `tools/popular-models/` |
-| [skills.md](skills.md) | Installed skills | `~/.pi/agent/skills/` |
-| [bin-and-shell.md](bin-and-shell.md) | Helper scripts & shell alias | `tools/pi-snap`, `install.sh`, `~/.pi/agent/bin/`, `~/.bashrc` |
-| [antigravity.md](antigravity.md) | AGY global instructions, skill, TypeSafe MCP integration | `tools/antigravity/`, `~/.gemini/GEMINI.md`, `~/.gemini/config/skills/`, AGY MCP settings |
+| [bootstrap.md](bootstrap.md) | Prerequisites, clean setup, verification, secrets, trust, migrations | `README.md`, `install.sh`, `tools/install/` |
+| [settings.md](settings.md) | Pi defaults, trust, provider auth boundary, automatic Jev | `config/pi/settings.template.json`, `.pi/settings.json`, `~/.pi/agent/settings.json` |
+| [agent-instructions.md](agent-instructions.md) | Global Pi instructions and workflow | `config/pi/AGENT.md` → `~/.pi/agent/AGENT.md` |
+| [keybindings.md](keybindings.md) | Pi terminal bindings | `config/pi/keybindings.json` → `~/.pi/agent/keybindings.json` |
+| [extensions.md](extensions.md) | Pi extensions and snapshot behavior | `config/pi/extensions/`, `tools/popular-models/` |
+| [skills.md](skills.md) | Shared, Pi-only, AGY-only, and pinned external skills | `skills/`, `tools/skills.lock` |
+| [bin-and-shell.md](bin-and-shell.md) | Pi-snap, shell blocks, installers, verifier | `tools/pi-snap`, `config/pi/shell/`, `tools/install/` |
+| [antigravity.md](antigravity.md) | AGY settings, keybindings, plugin, hooks, MCP, Jev behavior | `config/agy/`, `tools/antigravity/` |
+
+## Customization summary
+
+1. Pi defaults are OpenRouter `cohere/north-mini-code:free`, high thinking, ask trust, dark theme, and `npm:pi-jev`.
+2. Pi automatic Jev tool/skill routing is enabled by `PI_JEV_AUTO=1`; other automatic Jev modes remain off.
+3. Pi has a destructive-operation guard, automatic session snapshot, and popular-models transcript widget.
+4. AGY uses Vim editor mode, managed keybindings, an always-on Jev plugin rule, session hooks, and the local `pi-sandbox-jev` MCP adapter.
+5. `skills/common/` is the single source for the shared catch-up and grill-me skills, linked into Pi and AGY. Third-party skill repos are pinned in `tools/skills.lock`.
+6. `pi-snap` provides a manual and session-start rollback safety net. This is not process isolation.
 
 ## Related design doc
 
-- Sandbox (daily-tier safety net): `doc/plan/archive/pi-sandbox-daily-tier-plan.md`
-
-## Customization summary (delta from stock)
-
-1. **Provider/model**: OpenRouter default `cohere/north-mini-code:free` (Cohere, free); Google is also configured.
-2. **Thinking level**: `high`.
-3. **Project trust**: explicit `ask` (default, but pinned).
-4. **Global system prompt** (`AGENT.md`): Align→Plan→Wait with read-only repo inspection and bounded pre-approval pi-jev planning scores, plus post-approval checks and delete rules.
-5. **Pi package**: `npm:pi-jev`, configured for privacy-filtered typed evaluations, conditional discovery, and advisory gate checks; TypeSafe API key is kept outside the repo.
-6. **Extensions**: `delete-guard` (destructive-op guard), `session-snapshot` (rollback snapshots), and the read-only popular-models widget.
-7. **Keybindings**: vim-style cursor + `alt+enter` newline.
-8. **Skills**: catch-up-project, code-review, grill-me, science-skills-common, uv.
-9. **Helpers**: `pi-snap` snapshot/management CLI (repo `tools/pi-snap`, deployed by `install.sh`) + `pi-snap` shell alias + `fd` binary.
-10. **Antigravity CLI**: repo-managed Jev development skill and local TypeSafe MCP adapter, installed by `tools/antigravity/install-agy.sh`.
+- [Pi daily-tier sandbox plan](../plan/archive/pi-sandbox-daily-tier-plan.md)

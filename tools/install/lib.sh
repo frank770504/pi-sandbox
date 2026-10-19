@@ -9,7 +9,6 @@
 # Global flags (set by the caller before calling helpers):
 #   DRY_RUN=1  print planned changes, write nothing
 #   CHECK=1    report changes, write nothing, exit non-zero at the end
-#   FORCE=1    allow overwriting without the interactive confirmation path
 #
 # Helpers never delete files. Existing targets are backed up before a write.
 
@@ -18,7 +17,6 @@ REPO_ROOT="${REPO_ROOT:-$(cd "$INSTALL_DIR/../.." && pwd -P)}"
 
 : "${DRY_RUN:=0}"
 : "${CHECK:=0}"
-: "${FORCE:=0}"
 : "${CHANGES:=0}"
 
 info() { printf '[info] %s\n' "$*"; }
@@ -42,7 +40,13 @@ require_cmd() {
 backup_file() {
   local target="$1"
   [ -e "$target" ] || [ -L "$target" ] || return 0
-  local backup="$target.bak.$(date +%Y%m%d-%H%M%S)"
+  local stamp backup suffix=0
+  stamp="$(date +%Y%m%d-%H%M%S)-$$"
+  backup="$target.bak.$stamp"
+  while [ -e "$backup" ] || [ -L "$backup" ]; do
+    suffix=$((suffix + 1))
+    backup="$target.bak.$stamp-$suffix"
+  done
   if cp -a "$target" "$backup" 2>/dev/null; then
     info "backup: $backup"
   else
@@ -87,7 +91,7 @@ install_json_merge() {
     warn "out of date: $label"
     return 0
   fi
-  backup_file "$target" || true
+  backup_file "$target" || die "backup failed; refusing to update $target"
   python3 "$INSTALL_DIR/merge-json.py" "${merge_options[@]}" "$template" "$target" | write_atomic "$target" 0644
   info "updated: $label"
 }
@@ -116,7 +120,7 @@ install_block() {
     warn "out of date: $label"
     return 0
   fi
-  backup_file "$target" || true
+  backup_file "$target" || die "backup failed; refusing to update $target"
   python3 "$INSTALL_DIR/merge-lines.py" \
     --file "$target" --block-file "$block_file" \
     --begin "$begin" --end "$end" | write_atomic "$target" 0644
@@ -149,7 +153,7 @@ remove_block() {
     warn "out of date: $label"
     return 0
   fi
-  backup_file "$target" || true
+  backup_file "$target" || die "backup failed; refusing to update $target"
   python3 "$INSTALL_DIR/merge-lines.py" --remove \
     --file "$target" --begin "$begin" --end "$end" | write_atomic "$target" 0644
   info "removed block: $label"
@@ -174,7 +178,7 @@ install_copy() {
   CHANGES=$((CHANGES + 1))
   if [ "$DRY_RUN" = 1 ]; then info "would install: $label"; return 0; fi
   if [ "$CHECK" = 1 ]; then warn "out of date: $label"; return 0; fi
-  backup_file "$target" || true
+  backup_file "$target" || die "backup failed; refusing to update $target"
   write_atomic "$target" "$mode" < "$src"
   info "installed: $label"
 }
@@ -195,7 +199,9 @@ install_link() {
   if [ "$DRY_RUN" = 1 ]; then info "would link: $label -> $src"; return 0; fi
   if [ "$CHECK" = 1 ]; then warn "out of date: $label"; return 0; fi
   mkdir -p "$(dirname "$target")"
-  [ -e "$target" ] || [ -L "$target" ] && backup_file "$target" || true
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    backup_file "$target" || die "backup failed; refusing to update $target"
+  fi
   ln -sfn "$src" "$target"
   info "linked: $label -> $src"
 }
@@ -204,6 +210,14 @@ summary() {
   if [ "$CHECK" = 1 ] && [ "$CHANGES" -gt 0 ]; then
     warn "$CHANGES item(s) out of date"
     return 1
+  fi
+  if [ "$DRY_RUN" = 1 ]; then
+    if [ "$CHANGES" -eq 0 ]; then
+      info "everything already up to date"
+    else
+      info "$CHANGES item(s) would change"
+    fi
+    return 0
   fi
   if [ "$CHANGES" -eq 0 ]; then
     info "everything already up to date"

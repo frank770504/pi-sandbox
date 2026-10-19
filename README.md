@@ -1,179 +1,156 @@
-# Personal setting
+# pi-sandbox — reproducible Pi + Antigravity setup
 
-This repo is made to track my personal settings.
-If anyone has better ideas and happens to have time to talk to me,
-please leave a message. Thanks.
+This repository tracks a personal development-agent environment for [Pi](https://github.com/earendil-works/pi-mono) and the Antigravity CLI (`agy`). Its installers recreate the repo-managed configuration, common skills, pinned third-party skills, Pi rollback helper, and the local TypeSafe Jev MCP adapter.
 
-# pi-sandbox
+This is a **configuration and recovery setup, not a security sandbox**. It does not isolate trusted host processes from untrusted code.
 
-Custom [pi](https://github.com/earendil-works/pi-mono) configuration and a
-rollback safety net for daily development. `pi` has no built-in sandbox — this
-repo documents the custom config on this machine and provides `pi-snap`, a
-hardlink-snapshot tool that lets you undo accidental damage.
+## Quick start
 
-## What's here
+### 1. Install prerequisites
 
-```
-.
-├── install.sh                      # install pi-snap + shell alias
-├── tools/
-│   ├── pi-snap                     # snapshot + management CLI (source of truth)
-│   ├── popular-models/             # read-only top-model widget + installer
-│   └── antigravity/                # AGY Jev MCP adapter, skill source, installer
-└── doc/
-    ├── plan/archive/…              # approved sandbox design (decision record)
-    └── spec/…                      # specs of all custom pi config on this machine
-```
+Install and authenticate [Pi](https://github.com/earendil-works/pi-mono) and [Antigravity CLI](https://antigravity.google/docs/cli/reference) using their official instructions. The verifier expects:
 
-## What this is for
+- Pi **1.3.0 or newer**
+- Antigravity CLI (`agy`) **1.4.0 or newer**
+- Node.js **20 or newer** and npm
+- Git, Python 3, and rsync
 
-- **Daily work** (your own trusted repos): run `pi` normally on the host, with
-  a safety net made of two layers — git (tracked files) and `pi-snap` hardlink
-  snapshots (everything, including untracked files).
-- **Untrusted / unmonitored work**: not covered here; see
-  `doc/plan/archive/pi-sandbox-daily-tier-plan.md` for the parked Docker tier.
+The repo installs `npm:pi-jev` through Pi and builds the local AGY MCP server from its locked npm dependencies; both need npm registry access on a clean setup. Third-party skill installation needs network access to the public Git repositories in [`tools/skills.lock`](tools/skills.lock).
 
-Read the full rationale in the [plan](doc/plan/archive/pi-sandbox-daily-tier-plan.md)
-and the per-file specs in [doc/spec/](doc/spec/README.md).
+### 2. Log in and configure TypeSafe credentials
 
----
+Log in to the model providers you use from Pi and AGY. Provider authentication, Pi's `auth.json`, saved project trust, and AGY's trusted-workspace list are machine-local and are **not** copied from this repository.
 
-## Install `pi-snap`
+For Jev, use one protected TypeSafe key file shared by both tools. Create it once at `~/.config/typesafe/jev_api_key` with owner-only permissions. For example, in an interactive Bash shell:
 
 ```bash
-./install.sh
-source ~/.bashrc          # activate the pi-snap alias in this shell
-pi-snap help
+install -d -m 700 "$HOME/.config/typesafe"
+read -rsp 'TypeSafe API key: ' TYPESAFE_KEY
+printf '\n'
+(umask 077; printf '%s\n' "$TYPESAFE_KEY" > "$HOME/.config/typesafe/jev_api_key")
+unset TYPESAFE_KEY
+chmod 600 "$HOME/.config/typesafe/jev_api_key"
 ```
 
-`install.sh` copies `tools/pi-snap` to `~/.pi/agent/bin/pi-snap` (backing up any
-existing file), makes it executable, and adds the `pi-snap` alias to `~/.bashrc`
-idempotently.
+If the file already exists, preserve it rather than overwriting it blindly. Never put the key in the repo, a command argument, or a Git commit. Pi is linked to this file; AGY stores only the file path in MCP configuration.
 
----
-
-## Install the popular-models conversation info
+### 3. Install the environment
 
 ```bash
-bash tools/popular-models/install.sh          # copy into ~/.pi/agent/extensions/
-bash tools/popular-models/install.sh --link   # symlink the repo source
+git clone <this-repository-url> pi-sandbox
+cd pi-sandbox
+./install.sh --all
 ```
 
-On startup and when creating a new session, this read-only extension adds
-OpenRouter's ten most-used models for programming (weekly tool-call usage) as a
-width-aware table in the TUI transcript. It scrolls with the conversation but is
-stored as a custom session entry excluded from model context; the list is not
-injected into the prompt. It does not trigger a turn or change the active model.
-Rankings and model details are cached for 12 hours; stale data is used when
-refresh fails, and unavailable details are marked `n/a` without hiding the
-ranking. See [extensions.md](doc/spec/extensions.md) for details.
+The full install merges managed settings without replacing unrelated JSON keys, installs the Pi package and files, provisions pinned skills, builds/tests the AGY MCP adapter if needed, and registers the local Jev server if it is not already registered. Existing config files are backed up before changes. Existing conflicting skill directories are preserved and cause the installer to stop rather than silently replacing them.
 
----
-
-## Install the AGY Jev workflow
+For an existing installation with old copies of the shared skills, explicitly request the safe migration. Original directories are moved intact outside skill-discovery paths to `~/.pi-sandbox-backups/skills/` before the common links are created:
 
 ```bash
-bash tools/antigravity/install-agy.sh
-agy mcp list
+./install.sh --all --migrate-existing
 ```
 
-This installs a repo-managed Antigravity skill and registers a local stdio MCP
-adapter for TypeSafe Jev. Configure `TYPESAFE_API_KEY` in the environment used
-to launch `agy`, or set `TYPESAFE_API_KEY_FILE` to an owner-only secret file
-before running the installer. It stores only that file path, never the key, in
-AGY MCP configuration or the repository.
-See [antigravity.md](doc/spec/antigravity.md) for details.
+The AGY installer leaves an existing same-named MCP entry untouched. If you move this repo and verification reports a stale adapter path, update that entry explicitly (the key value is never an argument):
 
----
+```bash
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+agy mcp add --env "TYPESAFE_API_KEY_FILE=$HOME/.config/typesafe/jev_api_key" \
+  pi-sandbox-jev node "$REPO_ROOT/tools/antigravity/jev-mcp/dist/index.js"
+```
 
-## Using `pi-snap`
+If you intentionally do not want the public third-party skill repositories, use `--no-external` and later verify with the same option:
 
-Snapshots live in `~/.pi/snapshots/<project>/`, keep the last **10** per project
-(older ones are pruned automatically), and exclude regenerable junk (`.git`,
-`node_modules`, `.venv`, `build`, `install`, `log`, `dist`, `target`, `__pycache__`,
-`*.pyc`, `.uv`, `.cache`). Unchanged files are hardlinked, so later snapshots
-cost almost nothing.
+```bash
+./install.sh --all --no-external
+tools/install/verify.sh --no-external
+```
 
-### Commands
+### 4. Verify
 
-| Command | Purpose |
-|---|---|
-| `pi-snap [dir]` | create a snapshot of `dir` (default: current dir) |
-| `pi-snap list [dir\|--all]` | list snapshots (`*` = latest) |
-| `pi-snap size [dir\|--all]` | disk usage, deduplicated |
-| `pi-snap diff <snap> [dir]` | preview what a restore would change |
-| `pi-snap restore <snap> [--into dir]` | restore a snapshot (auto-snapshots first) |
-| `pi-snap rm <snap>` | delete one snapshot (repairs `latest`) |
-| `pi-snap prune [N] [dir]` | prune to N snapshots (default 10) |
-| `pi-snap clean [--all]` | remove orphaned projects; `--all` wipes the store |
+```bash
+tools/install/verify.sh
+```
 
-- `<snap>` is `latest`, a snapshot basename in the current project, or an
-  absolute path to a snapshot directory.
-- `-y` / `--yes` skips confirmation prompts (`rm`, `clean`).
+The verifier checks prerequisites and versions, Pi and AGY managed files/settings, automatic-Jev configuration, common and pinned skill links, the local MCP registration, and secret-file permissions. It never prints secret values and does **not** make live Jev API calls. If credentials are not configured yet, they are reported as warnings; require them with:
 
-### Examples
+```bash
+tools/install/verify.sh --strict-credentials
+```
+
+### 5. Start new sessions
+
+- In an interactive Bash shell, run `source ~/.bashrc` if needed, then start `pi`. `/jev status` should show automatic routing enabled. Pi's `PI_JEV_AUTO=1` enables a Jev tool/skill routing request per prompt; it requires a configured key and incurs a Jev request per prompt.
+- Start a new `agy` session after installation. The Jev plugin supplies the global development rule, session-start and first-invocation reminders, the Jev skill, and permissions for the named `jev_evaluate` and `jev_gate` tools. For software-development tasks the rule instructs AGY to evaluate plans with Jev. AGY automation is instruction-and-hook based, not a hard guarantee that every kind of task will call Jev. A live synthetic Jev smoke test is described in [`doc/spec/antigravity.md`](doc/spec/antigravity.md).
+
+## Installer commands
+
+```bash
+./install.sh                         # legacy behavior: install pi-snap only
+./install.sh --all                   # install all repo-managed components
+./install.sh --all --dry-run         # preview changes without writing
+./install.sh --all --check           # report drift without writing
+./install.sh --all --no-external     # omit pinned third-party skills
+./install.sh --all --migrate-existing # preserve old skill dirs, then link common sources
+
+tools/install/install-pi.sh [--dry-run|--check]
+tools/install/install-agy.sh [--dry-run|--check|--build]
+tools/install/install-skills.sh [--dry-run|--check|--no-external|--migrate-existing]
+tools/install/verify.sh [--no-external] [--strict-credentials]
+```
+
+`./install.sh` with no arguments remains compatible with the original Pi-snap installer. Component installers are also available directly.
+
+## What is managed
+
+| Component | Repo source | Installed location |
+|---|---|---|
+| Pi global settings | `config/pi/settings.template.json` | `~/.pi/agent/settings.json` (managed keys only; packages are additive) |
+| Pi project default model | `.pi/settings.json` | loaded for this repo after project trust |
+| Pi instructions and keybindings | `config/pi/AGENT.md`, `config/pi/keybindings.json` | `~/.pi/agent/` |
+| Pi extensions | `config/pi/extensions/`, `tools/popular-models/` | `~/.pi/agent/extensions/` |
+| Shared skills | `skills/common/` | Pi `~/.pi/agent/skills/`, AGY `~/.gemini/config/skills/` |
+| Pi Jev package | `npm:pi-jev` in settings; installed by `pi install` | `~/.pi/agent/npm/` |
+| Automatic Pi Jev | `config/pi/shell/jev-auto.sh` | managed block in `~/.bashrc` |
+| AGY CLI settings/keybindings | `config/agy/*.template.json` | `~/.gemini/antigravity-cli/` |
+| AGY Jev plugin | `config/agy/plugin/pi-sandbox-jev/` | `~/.gemini/config/plugins/pi-sandbox-jev` |
+| AGY MCP adapter | `tools/antigravity/jev-mcp/` | local stdio MCP registration `pi-sandbox-jev` |
+| Third-party skills | `tools/skills.lock` | pinned clones and skill links in Pi/AGY |
+| Rollback helper | `tools/pi-snap` | `~/.pi/agent/bin/pi-snap` |
+
+See [`config/manifest.tsv`](config/manifest.tsv) for the complete source/target/mode inventory.
+
+## State intentionally kept outside the repository
+
+The installers never copy or commit provider credentials, TypeSafe keys, Pi auth, project trust decisions, AGY trusted workspaces, conversation history, or machine-specific model/permission choices. AGY's `editor`, color scheme, notifications, status line, keybindings, plugin enablement, and narrow named Jev MCP allow rules are managed; its model, deny rules, workspace trust, and other user permissions are preserved.
+
+External skills are pinned by commit. By default they are cloned under `~/Code/3party`; set `PI_SANDBOX_SKILLS_ROOT` to choose another parent directory. The `fd` binary present on the original machine is not vendored by this repo; install `fd-find` (or an equivalent `fd`) separately if you want that optional helper.
+
+## `pi-snap` rollback helper
+
+Snapshots live under `~/.pi/snapshots/`, keep the latest 10 per project by default, and use hardlinks for unchanged files. Regenerable directories such as `.git`, `node_modules`, `build`, and `dist` are excluded.
 
 ```bash
 cd ~/Code/myproject
-pi-snap                       # checkpoint before a risky change
-# …ask pi to do the change…
-pi-snap list                  # see snapshots
-pi-snap diff latest           # see what changed since the checkpoint
-pi-snap restore latest        # undo it (current state is snapshotted first)
-pi-snap size --all            # how much disk the whole store uses
+pi-snap                 # checkpoint
+pi-snap list
+pi-snap diff latest
+pi-snap restore latest  # current state is snapshotted first
 ```
 
-### Typical rollback workflow
+`PI_SNAP_ROOT` changes the store location; `PI_SNAP_KEEP` changes retention. Run `pi-snap help` for the complete command list.
 
-1. `pi-snap` before telling pi to do something destructive.
-2. Review the result with `pi-snap diff latest`.
-3. If it went wrong: `pi-snap restore latest` — the pre-restore state is
-   preserved as a new snapshot, so the restore itself is reversible.
+## Tests and documentation
 
-**Safety guarantees:** `restore` always snapshots the current state first;
-`restore` never deletes excluded dirs (`.git`, `node_modules`, …); `rm` refuses
-any path outside `~/.pi/snapshots`.
+```bash
+bash tools/install/test.sh
+bash tools/install/test-skills.sh
+bash tools/install/test-e2e.sh
+cd tools/antigravity/jev-mcp
+npm run typecheck && npm test && npm run build
+```
 
-### Environment
+Run `test-e2e.sh` after the adapter is built; the normal `./install.sh --all` does this on a clean clone. The end-to-end test uses CLI shims and does not contact TypeSafe.
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `PI_SNAP_ROOT` | `~/.pi/snapshots` | snapshot store location |
-| `PI_SNAP_KEEP` | `10` | snapshots kept per project |
-
----
-
-## Configuring pi with this repo
-
-`install.sh` handles the `pi-snap` tool. User-level pi config lives in
-`~/.pi/agent/` and is documented in `doc/spec/`; this repo also commits its
-project-specific default model in `.pi/settings.json`:
-
-| Spec | Live config file | What it configures |
-|---|---|---|
-| [settings.md](doc/spec/settings.md) | `~/.pi/agent/settings.json`, `.pi/settings.json` | provider/model defaults, thinking level, project trust, pi-jev package and setup |
-| [agent-instructions.md](doc/spec/agent-instructions.md) | `~/.pi/agent/AGENT.md` | global system prompt (approval flow, repo-aware pi-jev planning loop, validation and delete rules) |
-| [keybindings.md](doc/spec/keybindings.md) | `~/.pi/agent/keybindings.json` | vim-style TUI bindings |
-| [extensions.md](doc/spec/extensions.md) | `~/.pi/agent/extensions/*.ts` | delete-guard, session-snapshot, popular-models |
-| [skills.md](doc/spec/skills.md) | `~/.pi/agent/skills/` | installed skills |
-| [bin-and-shell.md](doc/spec/bin-and-shell.md) | `tools/pi-snap`, `~/.pi/agent/bin/`, `~/.bashrc` | pi-snap + alias |
-| [antigravity.md](doc/spec/antigravity.md) | `~/.gemini/GEMINI.md`, AGY global skill, MCP config | Antigravity CLI Jev workflow and local TypeSafe MCP adapter |
-
-These specs record the current config (with secrets redacted), so they are the
-reference for replicating this setup on another Pi installation. For pi-jev,
-add `npm:pi-jev` to the packages setting, configure a TypeSafe API key outside
-the repo (see [settings.md](doc/spec/settings.md)), and copy the repo-aware
-planning and validation workflow from [agent-instructions.md](doc/spec/agent-instructions.md)
-into the global instructions file. Verify with `/jev status`. To apply a spec,
-create/copy the documented content into the corresponding live file.
-
-> **Note:** `session-snapshot` (see `doc/spec/extensions.md`) calls `pi-snap` on
-> every session start, so snapshots happen automatically — you only need to run
-> `pi-snap` manually for a checkpoint right before a specific risky step.
-
----
-
-## Docs
-
-- [Sandbox plan / decisions](doc/plan/archive/pi-sandbox-daily-tier-plan.md)
-- [Spec index](doc/spec/README.md)
+- [Bootstrap/install specification](doc/spec/bootstrap.md)
+- [Pi and AGY spec index](doc/spec/README.md)
+- [Sandbox design record](doc/plan/archive/pi-sandbox-daily-tier-plan.md)

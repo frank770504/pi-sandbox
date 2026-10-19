@@ -12,7 +12,9 @@
 # Secrets, auth state, trust decisions, and per-user workspace lists are
 # intentionally NOT in this manifest.
 
-pi-settings	merge	config/pi/settings.template.json	~/.pi/agent/settings.json	managed keys only; preserve unrelated keys; never set lastChangelogVersion
+pi-settings	merge	config/pi/settings.template.json	~/.pi/agent/settings.json	managed keys only; additive packages; preserve unrelated keys; never set lastChangelogVersion
+pi-jev-package	runtime	-	pi install npm:pi-jev	install the declared package if it is not present
+pi-project-model	runtime	.pi/settings.json	.pi/settings.json	project-level default model loaded after project trust; no separate install
 pi-agent	copy	config/pi/AGENT.md	~/.pi/agent/AGENT.md	pi global instructions
 pi-keybindings	copy	config/pi/keybindings.json	~/.pi/agent/keybindings.json	pi TUI keybindings
 pi-delete-guard	copy	config/pi/extensions/delete-guard.ts	~/.pi/agent/extensions/delete-guard.ts	pi extension
@@ -32,8 +34,8 @@ agy-plugin-enable	merge	config/agy/plugin-enable.template.json	~/.gemini/config/
 agy-plugin	link	config/agy/plugin/pi-sandbox-jev	~/.gemini/config/plugins/pi-sandbox-jev	plugin with rule, skill, and hooks
 agy-mcp	runtime	-	agy mcp registration pi-sandbox-jev	idempotent registration of the repo-built stdio server
 
-shell-pi-snap	block	install.sh	~/.bashrc	managed pi-snap alias block
-shell-jev-auto	block	install.sh	~/.bashrc	managed PI_JEV_AUTO=1 block
+shell-pi-snap	block	config/pi/shell/pi-snap.sh	~/.bashrc	managed pi-snap alias block
+shell-jev-auto	block	config/pi/shell/jev-auto.sh	~/.bashrc	managed PI_JEV_AUTO=1 block
 
 pi-models-store	runtime	-	~/.pi/agent/models-store.json	pi-managed cache; never copied from the repo
 

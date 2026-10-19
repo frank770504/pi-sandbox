@@ -57,18 +57,20 @@ python3 "$DIR/merge-json.py" --check "$TMP/t.json" "$TMP/merged.json" >/dev/null
 expect_rc "check identical" 0 $?
 
 cat > "$TMP/additive-template.json" <<'EOF'
-{"permissions": {"allow": ["mcp(pi-sandbox-jev)"]}, "entries": [{"path": "plugins"}]}
+{"permissions": {"allow": ["mcp(pi-sandbox-jev)"]}, "entries": [{"path": "plugins"}], "packages": ["npm:pi-jev"]}
 EOF
 cat > "$TMP/additive-target.json" <<'EOF'
-{"permissions": {"allow": ["command(*)", "mcp(existing)"]}, "entries": [{"path": "other"}]}
+{"permissions": {"allow": ["command(*)", "mcp(existing)"]}, "entries": [{"path": "other"}], "packages": ["npm:existing"]}
 EOF
-python3 "$DIR/merge-json.py" --append-path permissions.allow --append-path entries \
+python3 "$DIR/merge-json.py" --append-path permissions.allow --append-path entries --append-path packages \
   "$TMP/additive-template.json" "$TMP/additive-target.json" > "$TMP/additive-merged.json"
 expect_eq "additive permission preserves existing rules" "3" "$(json "['permissions']['allow'].__len__()" "$TMP/additive-merged.json")"
 expect_eq "additive permission appended" "mcp(pi-sandbox-jev)" "$(json "['permissions']['allow'][2]" "$TMP/additive-merged.json")"
 expect_eq "additive entries preserve existing entry" "other" "$(json "['entries'][0]['path']" "$TMP/additive-merged.json")"
 expect_eq "additive entries appended" "plugins" "$(json "['entries'][1]['path']" "$TMP/additive-merged.json")"
-python3 "$DIR/merge-json.py" --append-path permissions.allow --append-path entries \
+expect_eq "additive packages preserve existing package" "npm:existing" "$(json "['packages'][0]" "$TMP/additive-merged.json")"
+expect_eq "additive packages appended" "npm:pi-jev" "$(json "['packages'][1]" "$TMP/additive-merged.json")"
+python3 "$DIR/merge-json.py" --append-path permissions.allow --append-path entries --append-path packages \
   --check "$TMP/additive-template.json" "$TMP/additive-merged.json" >/dev/null 2>&1
 expect_rc "additive merge idempotent" 0 $?
 
@@ -131,11 +133,11 @@ echo "== lib.sh =="
 cat > "$TMP/lib-template.json" <<'EOF'
 {"defaultModel": "new-model", "theme": "dark"}
 EOF
-export DRY_RUN=1 CHECK=0 FORCE=0 CHANGES=0
+export DRY_RUN=1 CHECK=0 CHANGES=0
 install_json_merge "$TMP/lib-template.json" "$TMP/lib-target.json" test >/dev/null 2>&1
 expect_eq "dry-run does not create target" "missing" "$([ -e "$TMP/lib-target.json" ] && echo present || echo missing)"
 
-export DRY_RUN=0 CHECK=0 FORCE=0 CHANGES=0
+export DRY_RUN=0 CHECK=0 CHANGES=0
 install_json_merge "$TMP/lib-template.json" "$TMP/lib-target.json" test >/dev/null 2>&1
 expect_eq "merge creates target" "dark" "$(json "['theme']" "$TMP/lib-target.json")"
 expect_eq "first run reports change" "1" "$CHANGES"
@@ -143,18 +145,29 @@ expect_eq "first run reports change" "1" "$CHANGES"
 cat > "$TMP/other-template.json" <<'EOF'
 {"defaultModel": "changed"}
 EOF
-export DRY_RUN=0 CHECK=0 FORCE=0 CHANGES=0
+export DRY_RUN=0 CHECK=0 CHANGES=0
 install_json_merge "$TMP/other-template.json" "$TMP/lib-target.json" test >/dev/null 2>&1
 expect_eq "second differing run reports change" "1" "$CHANGES"
 expect_eq "backup created" "1" "$(find "$TMP" -maxdepth 1 -name 'lib-target.json.bak.*' | wc -l | tr -d ' ')"
 
-export DRY_RUN=0 CHECK=0 FORCE=0 CHANGES=0
+export DRY_RUN=0 CHECK=0 CHANGES=0
 install_json_merge "$TMP/other-template.json" "$TMP/lib-target.json" test >/dev/null 2>&1
 expect_eq "idempotent rerun reports no change" "0" "$CHANGES"
 
-export DRY_RUN=0 CHECK=1 FORCE=0 CHANGES=0
+export DRY_RUN=0 CHECK=1 CHANGES=0
 install_json_merge "$TMP/lib-template.json" "$TMP/lib-target.json" test >/dev/null 2>&1
 expect_eq "check mode reports outdated" "1" "$CHANGES"
+
+cat > "$TMP/backup-source" <<'EOF'
+new content
+EOF
+printf 'old content\n' > "$TMP/backup-target"
+if ( . "$DIR/lib.sh"; cp() { return 1; }; DRY_RUN=0 CHECK=0 CHANGES=0; install_copy "$TMP/backup-source" "$TMP/backup-target" 0644 "backup failure fixture" >/dev/null 2>&1 ); then
+  fail "backup failure blocks overwrite"
+else
+  pass "backup failure blocks overwrite"
+fi
+expect_eq "backup failure leaves target unchanged" "old content" "$(cat "$TMP/backup-target")"
 
 echo
 printf 'passed: %d, failed: %d\n' "$PASS" "$FAIL"

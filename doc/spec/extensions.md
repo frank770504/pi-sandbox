@@ -1,6 +1,6 @@
 # Spec — Extensions
 
-Source: `~/.pi/agent/extensions/` (with `popular-models.ts` vendored under `tools/popular-models/`).
+Canonical sources: `config/pi/extensions/` and `tools/popular-models/`; installed to `~/.pi/agent/extensions/`.
 
 ## 1. `delete-guard.ts` — destructive-operation guard
 
@@ -38,8 +38,9 @@ before work begins.
 - Skips `reason === "reload"` (not a work boundary).
 - Debounces: skips if the `latest` snapshot symlink is < 60 s old (`lstatSync`,
   not `statSync` — `rsync -a` preserves the target dir's mtime).
-- Spawns `~/.pi/agent/bin/pi-snap <cwd>` and reports success/failure via
-  `ctx.ui.notify`.
+- Spawns `~/.pi/agent/bin/pi-snap <cwd>` and reports success/failure through
+  the UI only when it is still available. It catches stale-context errors so a
+  child process finishing after a non-interactive session cannot crash Pi.
 - Snapshot mechanics (script) documented in [bin-and-shell.md](bin-and-shell.md).
 
 ### Interaction with the 3-step workflow

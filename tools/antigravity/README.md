@@ -1,25 +1,25 @@
 # Antigravity (AGY) Jev workflow
 
-This folder contains the repo-managed Antigravity CLI integration for the Pi/Jev
-workflow discussed in `doc/spec/antigravity.md`:
+This folder contains the TypeSafe Jev stdio MCP adapter and legacy install assets. The current full environment setup is managed from `config/agy/` and `tools/install/install-agy.sh`; see [`doc/spec/antigravity.md`](../../doc/spec/antigravity.md).
 
 - `jev-mcp/` — local stdio MCP adapter using the official TypeSafe SDK.
-- `skills/jev-development/SKILL.md` — reusable AGY development-flow skill.
-- `global-rule-addendum.md` — managed section appended to `~/.gemini/GEMINI.md`.
-- `install-agy.sh` — build/test the adapter, install the skill, register the MCP
-  server, and merge the managed rule section without replacing unrelated rules.
+- `skills/jev-development/SKILL.md` — legacy standalone skill source; the active plugin source is under `config/agy/plugin/pi-sandbox-jev/`.
+- `AGY_RULE.md`, `global-rule-addendum.md`, and `install-agy.sh` — retained for compatibility with the earlier GEMINI.md-based installation.
 
 ## Install
 
+For a complete Pi + AGY setup, use the repository root orchestrator:
+
 ```bash
-bash tools/antigravity/install-agy.sh
+./install.sh --all
 agy mcp list
+tools/install/verify.sh
 ```
 
-The script runs the adapter tests and build before changing AGY configuration.
-It creates a timestamped backup before updating `~/.gemini/GEMINI.md`, refuses
-an existing different skill file, and leaves an already registered MCP server
-with the same name untouched.
+For AGY-only setup, run `bash tools/install/install-agy.sh`. The older
+`bash tools/antigravity/install-agy.sh` is retained for compatibility with the
+previous GEMINI.md workflow; it does not install the current AGY keybindings,
+managed editor settings, shared skills, plugin enablement, or hooks.
 
 ## TypeSafe credentials
 

@@ -1,108 +1,45 @@
-# Spec — Antigravity CLI (AGY) Jev Workflow
+# Spec — Antigravity CLI (AGY) Configuration and Jev
 
-This spec records the AGY integration for reproducing the Pi/Jev development
-workflow on this machine. The integration is intentionally local and keeps the
-TypeSafe API key outside the repository and AGY configuration.
+Canonical installer sources are under [`config/agy/`](../../config/agy/) and `tools/antigravity/`. Install with `./install.sh --all` or run `bash tools/install/install-agy.sh` directly.
 
-## Environment discovered
+## Managed settings and keybindings
 
-- CLI: `agy` 1.2.7 (`~/.local/bin/agy`).
-- Global instructions: `~/.gemini/GEMINI.md`.
-- Global skills: `~/.gemini/config/skills/<name>/SKILL.md` (per the installed
-  AGY customization guide).
-- The CLI supports local stdio MCP servers via `agy mcp add`.
-- TypeSafe publishes an official SDK and agent skill, but no official Jev MCP
-  server was found. This repo therefore contains its own small adapter using
-  the official SDK; it is not an official TypeSafe MCP package.
-- The workflow source is in `tools/antigravity/`; install with
-  `bash tools/antigravity/install-agy.sh`.
+AGY's CLI state is under `~/.gemini/antigravity-cli/`:
 
-## Files and runtime configuration
-
-| Repo source | Installed/runtime file | Purpose |
+| Repo source | Live file | Managed values |
 |---|---|---|
-| `tools/antigravity/AGY_RULE.md` and `global-rule-addendum.md` | `~/.gemini/GEMINI.md` | Global rule template plus managed read-only/Jev planning exception; unrelated instructions are preserved. |
-| `tools/antigravity/skills/jev-development/SKILL.md` | `~/.gemini/config/skills/jev-development/SKILL.md` | Detailed score/refinement, approval, test, and gate flow. |
-| `tools/antigravity/jev-mcp/` | `agy mcp` registration `pi-sandbox-jev` | Local stdio server with `jev_evaluate` and `jev_gate`. |
-| `tools/antigravity/install-agy.sh` | Run manually | Builds/tests adapter and installs the AGY pieces. |
+| `config/agy/settings.template.json` | `settings.json` | editor `vim`, dark color scheme, notifications, status line, narrow Jev MCP tool permissions |
+| `config/agy/keybindings.template.json` | `keybindings.json` | multiline input, Vim insert submit, conversation item rename/delete |
 
-The installer refuses to overwrite a different pre-existing skill, leaves a
-same-named MCP server untouched, and backs up `GEMINI.md` before changing the
-managed instructions. Run a new AGY session after installation so it discovers
-the skill and MCP server.
+JSON settings are merged. The installer preserves the existing model, trusted workspaces, deny rules, and unrelated settings. For automatic non-interactive Jev planning it adds only:
 
-## MCP adapter
+- `mcp(pi-sandbox-jev/jev_evaluate)`
+- `mcp(pi-sandbox-jev/jev_gate)`
 
-`tools/antigravity/jev-mcp/` is a pinned Node/TypeScript package using
-`@typesafe-ai/sdk` and `@modelcontextprotocol/sdk`.
+These narrow allow entries are required because AGY headless mode denies MCP calls that still require permission prompts. Existing allow and deny rules are preserved.
 
-- `jev_evaluate` accepts explicit JSON/text state and typed `choice`, `noul`,
-and `score` questions, and returns TypeSafe answers, confidence, model, and
-  usage. The workflow uses the native expected score on the 0–4 rubric.
-- `jev_gate` accepts explicit caller-supplied state/diff, criterion, and a
-  threshold (default `0.70`); it uses a TypeSafe Noul judgment and returns
-  probability/pass. It has no file-system or shell access and never collects a
-  Git diff itself.
-- Both tools serialize the submitted state to TypeSafe. The AGY skill restricts
-  calls to minimized, non-sensitive state unless the user explicitly authorizes
-  more.
-- Missing credentials or service failures return an error; the adapter never
-  fabricates a score or fails open.
+## Jev plugin, skills, and hooks
 
-## Credentials
+The repo-managed plugin is `config/agy/plugin/pi-sandbox-jev/`, linked to `~/.gemini/config/plugins/pi-sandbox-jev`. Discovery is enabled through `~/.gemini/config/plugins.json`; `~/.gemini/config/config.json` records the enabled state. It contains:
 
-Provide either:
+- `rules/AGENTS.md`: development planning must use the repo-aware Jev workflow and honor approval/secret rules.
+- `skills/jev-development/SKILL.md`: detailed planning, validation, and advisory gate procedure.
+- `hooks.json`: `SessionStart` and first-invocation `PreInvocation` reminder hooks.
 
-- `TYPESAFE_API_KEY` in the environment inherited by the AGY process, or
-- `TYPESAFE_API_KEY_FILE` pointing to a regular, owner-only secret file
-  (permission mode `0600` or stricter on Unix).
+Common `catch-up-project` and `grill-me` skills are linked from `skills/common/` into `~/.gemini/config/skills/`. Third-party code-review skills are pinned in [`tools/skills.lock`](../../tools/skills.lock). Existing common skill directories are preserved in `~/.pi-sandbox-backups/skills/` when explicitly migrated.
 
-The secret value is never passed through `agy mcp add --env`, stored in the
-repository, or logged. When installing with `TYPESAFE_API_KEY_FILE` set, the
-installer persists only the file path in the MCP environment. Do not reuse a
-world/group-readable key file; the adapter rejects such a file. The installer
-does not change key-file permissions.
+## Jev MCP adapter
 
-## Workflow behavior
+The local stdio server is maintained in `tools/antigravity/jev-mcp/` and registered as `pi-sandbox-jev` in `~/.gemini/config/mcp_config.json`. It exposes `jev_evaluate` and `jev_gate`, accepts caller-supplied state only, and has no filesystem or shell access. The installer runs typecheck/tests/build when its `dist` entry is absent or `--build` is supplied. This is a repo-maintained adapter using the TypeSafe and MCP SDKs, not an official TypeSafe MCP server.
 
-### Before approval
+The key is not stored in MCP configuration. AGY receives `TYPESAFE_API_KEY_FILE` pointing to the owner-only `~/.config/typesafe/jev_api_key` file, or inherits `TYPESAFE_API_KEY` from its launch environment.
 
-- Permit local read-only inspection only: file reads, listing/search, `git status`,
-  and `git diff`. Do not edit, test, build, install, or run mutating commands.
-- Send Jev only minimized, non-sensitive task summary, constraints, generalized
-  verified repo findings, and the plan. Never send raw source/diffs, private
-  identifiers/paths, logs, credentials, customer/personal data, proprietary
-  details, or vulnerabilities without explicit permission.
-- Use the fixed overall and diagnostic score questions (intent coverage,
-  scope/constraints, repo fit, assumptions, validation fit) plus primary-gap
-  choice. The ordered score anchors are 0–4; the expected score may be fractional
-  and confidence is reported separately. No numeric approval threshold is used.
-- Revise and reevaluate up to 10 times per planning run, including user-requested
-  revisions. Stop early when no material gap remains or after two rounds without
-  meaningful progress; surface unresolved material gaps instead of requesting
-  approval. Present score progression, polished plan, caveats, and iteration
-  count. The user's explicit “Go ahead” is still required before changes/tests.
+## Automatic Jev behavior and limitations
 
-### After approval
+On a new AGY session, the `SessionStart` hook injects a persistent reminder; the first-invocation hook injects a reminder before the first model call. The enabled plugin rule and skill instruct AGY to use `jev_evaluate` before planning software-development tasks. This is instruction-and-hook based, not a native AGY automatic-MCP routing mode: a model can produce malformed tool arguments or fail to call Jev, so verify with a live synthetic development prompt when credentials are available. `tools/install/verify.sh` checks configuration without making a live Jev API request.
 
-- Use AGY-native skill/tool discovery conditionally; keep automatic agents,
-  automatic routing, tool-guard, and auto-model off.
-- Stay within the approved plan; request renewed approval for material scope
-  changes.
-- Run deterministic tests first, with at most two in-scope fix-and-rerun
-  attempts. A Jev gate cannot override failing tests.
-- The acceptance criterion must be in the approved plan. Run the gate only when
-  tests pass and the supplied state/diff is safe to share or explicitly
-  authorized. Verify the tree was clean at task start and locally review the
-  current diff; handle untracked files separately. The gate is advisory. One
-  in-scope correction is allowed after a gate rejection, followed by tests and a
-  gate rerun.
-- Keep plan scores, gate probability/criterion, and test results distinct in the
-  final report. Report skipped/unavailable checks; never invent results.
+A verified synthetic session successfully completed a Jev evaluation after retrying malformed requests. Use a new AGY session after install so it reloads settings, skills, hooks, and MCP tools.
 
-## Permission note
+## User-managed AGY state
 
-The discovered AGY CLI settings contain a broad `command(*)` allow rule with a
-small explicit deny list. This integration does not change that permission
-configuration. The approval workflow is therefore instruction-level until the
-user separately chooses to review/tighten the CLI permissions.
+The installer does not replace the user's model, workspace trust list, permissions deny rules, OAuth credentials, session history, or unrelated global instructions. It removes only the marked repo-managed Jev block from `~/.gemini/GEMINI.md` (after backing the file up) because the plugin now owns that workflow rule. AGY login and trusted-workspace choices remain user actions.

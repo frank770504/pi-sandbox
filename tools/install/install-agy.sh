@@ -2,36 +2,34 @@
 # install-agy.sh — install/merge the repo-managed Antigravity configuration.
 #
 # Usage:
-#   install-agy.sh [--dry-run] [--check] [--force] [--build]
+#   install-agy.sh [--dry-run] [--check] [--build]
 #
 #   --dry-run  print planned changes, write nothing
 #   --check    report drift, write nothing, exit non-zero if out of date
-#   --force    accepted for symmetry; backups are always taken
 #   --build    rebuild/typecheck/test the Jev MCP adapter even if dist exists
 #
 # Manages: CLI settings merge, keybindings merge, the Jev plugin (rule + hooks),
 # removal of the legacy managed GEMINI.md rule block, the MCP registration, and
-# the adapter build. Model, permissions, non-workspace access, and trusted
-# workspaces are intentionally left untouched.
+# the adapter build. Model, deny rules, non-workspace access, and trusted
+# workspaces are preserved; only the two named Jev MCP tools are added to the
+# existing permissions.allow array.
 
 set -euo pipefail
 
 DRY_RUN=0
 CHECK=0
-FORCE=0
 BUILD=0
 
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;
     --check) CHECK=1 ;;
-    --force) FORCE=1 ;;
     --build) BUILD=1 ;;
     -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     *) echo "install-agy: unknown option: $arg" >&2; exit 2 ;;
   esac
 done
-export DRY_RUN CHECK FORCE
+export DRY_RUN CHECK
 
 INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd "$INSTALL_DIR/../.." && pwd -P)"
@@ -78,15 +76,12 @@ remove_block "$GEMINI" "$RULE_BEGIN" "$RULE_END" "GEMINI.md legacy Jev rule bloc
 # 6. MCP permission + registration: grant only this named Jev server and keep
 # an existing registration untouched; register only when missing.
 if command -v agy >/dev/null 2>&1; then
-  if [ "$DRY_RUN" = 1 ] || [ "$CHECK" = 1 ]; then
-    if agy mcp list 2>/dev/null | grep -Fq "$MCP_NAME"; then
-      info "unchanged: agy MCP server '$MCP_NAME'"
-    else
-      CHANGES=$((CHANGES + 1))
-      if [ "$DRY_RUN" = 1 ]; then info "would register: agy MCP server '$MCP_NAME'"; else warn "out of date: agy MCP server '$MCP_NAME'"; fi
-    fi
-  elif agy mcp list 2>/dev/null | grep -Fq "$MCP_NAME"; then
+  MCP_LIST="$(agy mcp list 2>/dev/null)" || die "could not query AGY MCP registrations"
+  if printf '%s\n' "$MCP_LIST" | grep -Fq "$MCP_NAME"; then
     info "unchanged: agy MCP server '$MCP_NAME'"
+  elif [ "$DRY_RUN" = 1 ] || [ "$CHECK" = 1 ]; then
+    CHANGES=$((CHANGES + 1))
+    if [ "$DRY_RUN" = 1 ]; then info "would register: agy MCP server '$MCP_NAME'"; else warn "out of date: agy MCP server '$MCP_NAME'"; fi
   else
     CHANGES=$((CHANGES + 1))
     if [ -n "${TYPESAFE_API_KEY_FILE:-}" ]; then
@@ -99,13 +94,14 @@ if command -v agy >/dev/null 2>&1; then
     info "registered: agy MCP server '$MCP_NAME'"
   fi
 else
-  warn "skip MCP registration: agy CLI not found"
+  die "agy CLI not found; install Antigravity before installing its configuration"
 fi
 
 # 7. Adapter build/test (only when needed or requested).
 if [ "$BUILD" != 1 ] && [ -f "$MCP_ENTRY" ]; then
   info "unchanged: jev-mcp adapter build (dist present; use --build to rebuild)"
 elif [ "$DRY_RUN" = 1 ]; then
+  CHANGES=$((CHANGES + 1))
   info "would build: jev-mcp adapter"
 elif [ "$CHECK" = 1 ]; then
   CHANGES=$((CHANGES + 1))

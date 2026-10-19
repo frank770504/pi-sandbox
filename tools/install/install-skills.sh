@@ -53,7 +53,9 @@ prepare_repo() {
   local clone_dir parent current origin
   clone_dir="$(expand_home "$clone_rel")"
   if [ -n "${PI_SANDBOX_SKILLS_ROOT:-}" ]; then
-    clone_dir="$PI_SANDBOX_SKILLS_ROOT/$(basename "$clone_dir")"
+    local skills_root
+    skills_root="$(expand_home "$PI_SANDBOX_SKILLS_ROOT")"
+    clone_dir="$skills_root/$(basename "$clone_dir")"
   fi
   parent="$(dirname "$clone_dir")"
 

@@ -1,6 +1,6 @@
 # Spec — Keybindings
 
-Source: `~/.pi/agent/keybindings.json`
+Canonical source: [`config/pi/keybindings.json`](../../config/pi/keybindings.json), installed to `~/.pi/agent/keybindings.json`.
 
 ```json
 {

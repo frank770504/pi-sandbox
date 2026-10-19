@@ -99,24 +99,26 @@ the environment used to launch AGY.
 
 ## Install into AGY
 
-From the root of this repository:
+For the full Pi + AGY setup, from the repository root run:
 
 ```bash
-bash tools/antigravity/install-agy.sh
+./install.sh --all
 agy mcp list
+tools/install/verify.sh
 ```
 
-The installer runs `npm ci`, typechecking, tests, and a build before changing
-AGY configuration. It then installs the global skill, merges the managed
-workflow section into `~/.gemini/GEMINI.md` while preserving unrelated text, and
-registers the stdio MCP server if it is not already registered. It creates a
-backup before changing `GEMINI.md`, refuses to overwrite a different existing
-skill, and leaves an existing MCP registration untouched. Start a **new AGY
-session** after installation to load the MCP server and skill.
+For AGY-only setup, run `bash tools/install/install-agy.sh`. It merges the
+managed CLI settings and keybindings, enables the repo plugin (rule, skill, and
+hooks), preserves unrelated settings and deny rules, adds narrowly scoped
+permissions for this server's `jev_evaluate` and `jev_gate` tools, and registers
+the MCP server if it is missing. It leaves an existing same-named MCP entry
+untouched. If you add a protected key file after registration, explicitly update
+the MCP entry using the `agy mcp add --env ...` example above. Start a **new AGY
+session** after installation to load the plugin, hooks, and MCP tools.
 
-If the MCP server was already installed and you later add a protected key file,
-update its environment with the `agy mcp add --env ...` example above. The
-installer deliberately does not overwrite an existing MCP entry.
+The older `bash tools/antigravity/install-agy.sh` manages the legacy GEMINI.md
+workflow and is retained for compatibility; it is not the full current
+configuration installer.
 
 ## Develop and test
 
