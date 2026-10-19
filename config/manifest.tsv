@@ -1,0 +1,43 @@
+# Managed environment manifest.
+# Tab-separated: component, mode, source, target, notes
+# mode values:
+#   copy  - target is replaced with the source content (backup first)
+#   link  - target is a symlink to the source
+#   merge - installer merges managed keys/sections into the existing target
+#   block - installer manages a marked block inside the existing target
+#   secret - installer only ensures the link/permissions; never copies a value
+#   runtime - handled by a component installer, not a plain file operation
+#
+# Sources are relative to the repository root. Targets support ~ expansion.
+# Secrets, auth state, trust decisions, and per-user workspace lists are
+# intentionally NOT in this manifest.
+
+pi-settings	merge	config/pi/settings.template.json	~/.pi/agent/settings.json	managed keys only; preserve unrelated keys; never set lastChangelogVersion
+pi-agent	copy	config/pi/AGENT.md	~/.pi/agent/AGENT.md	pi global instructions
+pi-keybindings	copy	config/pi/keybindings.json	~/.pi/agent/keybindings.json	pi TUI keybindings
+pi-delete-guard	copy	config/pi/extensions/delete-guard.ts	~/.pi/agent/extensions/delete-guard.ts	pi extension
+pi-session-snapshot	copy	config/pi/extensions/session-snapshot.ts	~/.pi/agent/extensions/session-snapshot.ts	pi extension
+pi-popular-models	copy	tools/popular-models/popular-models.ts	~/.pi/agent/extensions/popular-models.ts	pi read-only extension
+pi-snap	copy	tools/pi-snap	~/.pi/agent/bin/pi-snap	snapshot CLI
+
+common-catch-up-pi	link	skills/common/catch-up-project	~/.pi/agent/skills/catch-up-project	shared skill
+common-catch-up-agy	link	skills/common/catch-up-project	~/.gemini/config/skills/catch-up-project	shared skill
+common-grill-me-pi	link	skills/common/grill-me	~/.pi/agent/skills/grill-me	shared skill
+common-grill-me-agy	link	skills/common/grill-me	~/.gemini/config/skills/grill-me	shared skill
+
+agy-settings	merge	config/agy/settings.template.json	~/.gemini/antigravity-cli/settings.json	managed keys only; preserve model, permissions, trustedWorkspaces
+agy-keybindings	merge	config/agy/keybindings.template.json	~/.gemini/antigravity-cli/keybindings.json	managed keys only; preserve user overrides
+agy-plugin	link	config/agy/plugin/pi-sandbox-jev	~/.gemini/config/plugins/pi-sandbox-jev	plugin with rule, skill, and hooks
+agy-mcp	runtime	-	agy mcp registration pi-sandbox-jev	idempotent registration of the repo-built stdio server
+
+shell-pi-snap	block	install.sh	~/.bashrc	managed pi-snap alias block
+shell-jev-auto	block	install.sh	~/.bashrc	managed PI_JEV_AUTO=1 block
+
+pi-models-store	runtime	-	~/.pi/agent/models-store.json	pi-managed cache; never copied from the repo
+
+pi-typesafe-secret	secret	~/.config/typesafe/jev_api_key	~/.pi/agent/secrets/typesafe_api_key	link to the single owner-only key file; never copy the value
+
+external-code-review	link	tools/skills.lock	~/.pi/agent/skills/code-review-skill	pinned clone, then symlink
+external-code-review-agy	link	tools/skills.lock	~/.gemini/config/skills/code-review-skill	pinned clone, then symlink
+external-science-skills	link	tools/skills.lock	~/.pi/agent/skills/science_skills_common	pinned clone, then symlink
+external-science-uv	link	tools/skills.lock	~/.pi/agent/skills/uv	pinned clone, then symlink

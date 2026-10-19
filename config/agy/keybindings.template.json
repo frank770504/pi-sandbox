@@ -1,0 +1,6 @@
+{
+  "prompt.insert_newline": ["shift+enter", "ctrl+j"],
+  "vim.insert.submit": ["enter", "ctrl+s"],
+  "item.rename": ["f2"],
+  "item.delete": ["f4"]
+}

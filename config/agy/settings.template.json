@@ -1,0 +1,8 @@
+{
+  "colorScheme": "dark",
+  "editor": "vim",
+  "notifications": true,
+  "statusLine": {
+    "enabled": true
+  }
+}

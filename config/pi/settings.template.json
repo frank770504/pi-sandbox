@@ -1,0 +1,8 @@
+{
+  "defaultProvider": "openrouter",
+  "defaultModel": "cohere/north-mini-code:free",
+  "defaultThinkingLevel": "high",
+  "defaultProjectTrust": "ask",
+  "theme": "dark",
+  "packages": ["npm:pi-jev"]
+}
