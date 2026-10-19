@@ -66,10 +66,12 @@ write_atomic() {
 # unrelated keys. On change: back up, then write atomically.
 install_json_merge() {
   local template="$1" target="$2" label="${3:-$2}" rc=0
+  shift 3 || true
+  local -a merge_options=("$@")
   require_cmd python3
   [ -f "$template" ] || die "template not found: $template"
 
-  python3 "$INSTALL_DIR/merge-json.py" --check "$template" "$target" || rc=$?
+  python3 "$INSTALL_DIR/merge-json.py" "${merge_options[@]}" --check "$template" "$target" || rc=$?
   case "$rc" in
     0) info "unchanged: $label"; return 0 ;;
     3) : ;;
@@ -86,7 +88,7 @@ install_json_merge() {
     return 0
   fi
   backup_file "$target" || true
-  python3 "$INSTALL_DIR/merge-json.py" "$template" "$target" | write_atomic "$target" 0644
+  python3 "$INSTALL_DIR/merge-json.py" "${merge_options[@]}" "$template" "$target" | write_atomic "$target" 0644
   info "updated: $label"
 }
 
@@ -119,6 +121,38 @@ install_block() {
     --file "$target" --block-file "$block_file" \
     --begin "$begin" --end "$end" | write_atomic "$target" 0644
   info "updated: $label"
+}
+
+# Remove a managed marker block from a text file. No-op when already absent.
+remove_block() {
+  local target="$1" begin="$2" end="$3" label="${4:-$target}" rc=0
+  require_cmd python3
+  if [ ! -f "$target" ]; then
+    info "unchanged: $label (missing)"
+    return 0
+  fi
+
+  python3 "$INSTALL_DIR/merge-lines.py" --check --remove \
+    --file "$target" --begin "$begin" --end "$end" || rc=$?
+  case "$rc" in
+    0) info "unchanged: $label"; return 0 ;;
+    3) : ;;
+    *) die "invalid input while removing block from $label" ;;
+  esac
+
+  CHANGES=$((CHANGES + 1))
+  if [ "$DRY_RUN" = 1 ]; then
+    info "would remove block: $label"
+    return 0
+  fi
+  if [ "$CHECK" = 1 ]; then
+    warn "out of date: $label"
+    return 0
+  fi
+  backup_file "$target" || true
+  python3 "$INSTALL_DIR/merge-lines.py" --remove \
+    --file "$target" --begin "$begin" --end "$end" | write_atomic "$target" 0644
+  info "removed block: $label"
 }
 
 # Copy a file (or symlink source) to a target. Existing targets are backed up.

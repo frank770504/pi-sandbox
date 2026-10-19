@@ -2,6 +2,12 @@
   "colorScheme": "dark",
   "editor": "vim",
   "notifications": true,
+  "permissions": {
+    "allow": [
+      "mcp(pi-sandbox-jev/jev_evaluate)",
+      "mcp(pi-sandbox-jev/jev_gate)"
+    ]
+  },
   "statusLine": {
     "enabled": true
   }

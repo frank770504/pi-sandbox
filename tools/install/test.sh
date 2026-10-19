@@ -56,6 +56,22 @@ expect_eq "managed nested key updated" "True" "$(json "['statusLine']['enabled']
 python3 "$DIR/merge-json.py" --check "$TMP/t.json" "$TMP/merged.json" >/dev/null 2>&1
 expect_rc "check identical" 0 $?
 
+cat > "$TMP/additive-template.json" <<'EOF'
+{"permissions": {"allow": ["mcp(pi-sandbox-jev)"]}, "entries": [{"path": "plugins"}]}
+EOF
+cat > "$TMP/additive-target.json" <<'EOF'
+{"permissions": {"allow": ["command(*)", "mcp(existing)"]}, "entries": [{"path": "other"}]}
+EOF
+python3 "$DIR/merge-json.py" --append-path permissions.allow --append-path entries \
+  "$TMP/additive-template.json" "$TMP/additive-target.json" > "$TMP/additive-merged.json"
+expect_eq "additive permission preserves existing rules" "3" "$(json "['permissions']['allow'].__len__()" "$TMP/additive-merged.json")"
+expect_eq "additive permission appended" "mcp(pi-sandbox-jev)" "$(json "['permissions']['allow'][2]" "$TMP/additive-merged.json")"
+expect_eq "additive entries preserve existing entry" "other" "$(json "['entries'][0]['path']" "$TMP/additive-merged.json")"
+expect_eq "additive entries appended" "plugins" "$(json "['entries'][1]['path']" "$TMP/additive-merged.json")"
+python3 "$DIR/merge-json.py" --append-path permissions.allow --append-path entries \
+  --check "$TMP/additive-template.json" "$TMP/additive-merged.json" >/dev/null 2>&1
+expect_rc "additive merge idempotent" 0 $?
+
 python3 "$DIR/merge-json.py" --check "$TMP/t.json" "$TMP/missing.json" >/dev/null 2>&1
 expect_rc "check missing target" 3 $?
 
@@ -89,6 +105,23 @@ expect_rc "block idempotent" 0 $?
 printf '%s\n' "$B" > "$TMP/unbalanced"
 python3 "$DIR/merge-lines.py" --file "$TMP/unbalanced" --block-file "$TMP/block.txt" --begin "$B" --end "$E" >/dev/null 2>&1
 expect_rc "unbalanced markers fail closed" 1 $?
+
+printf 'top\n\n%s\nmanaged\n%s\n\nbottom\n' "$B" "$E" > "$TMP/rem"
+python3 "$DIR/merge-lines.py" --remove --file "$TMP/rem" --begin "$B" --end "$E" > "$TMP/rem.new"
+expect_eq "remove drops markers" "0" "$(grep -c 'test block' "$TMP/rem.new")"
+expect_eq "remove keeps top" "top" "$(head -1 "$TMP/rem.new")"
+expect_eq "remove keeps bottom" "bottom" "$(tail -1 "$TMP/rem.new")"
+mv "$TMP/rem.new" "$TMP/rem"
+python3 "$DIR/merge-lines.py" --check --remove --file "$TMP/rem" --begin "$B" --end "$E" >/dev/null 2>&1
+expect_rc "remove idempotent" 0 $?
+
+printf 'plain\n' > "$TMP/plain"
+python3 "$DIR/merge-lines.py" --check --remove --file "$TMP/plain" --begin "$B" --end "$E" >/dev/null 2>&1
+expect_rc "remove no-op when absent" 0 $?
+
+printf '%s\n' "$E" > "$TMP/endonly"
+python3 "$DIR/merge-lines.py" --remove --file "$TMP/endonly" --begin "$B" --end "$E" >/dev/null 2>&1
+expect_rc "remove unbalanced fails closed" 1 $?
 
 echo "== lib.sh =="
 

@@ -1,0 +1,7 @@
+{
+  "plugins": {
+    "pi-sandbox-jev": {
+      "enabled": true
+    }
+  }
+}

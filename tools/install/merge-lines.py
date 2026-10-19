@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Insert or replace a managed marker block inside a text file.
+"""Insert, replace, or remove a managed marker block inside a text file.
 
 The block content is taken from a file and wrapped by the caller-supplied begin
 and end markers. If the markers already exist, everything between them
-(inclusive) is replaced. If they do not exist, the block is appended. Text
-outside the block is preserved. The operation is idempotent.
+(inclusive) is replaced. If they do not exist, the block is appended. With
+--remove, an existing block is deleted instead. Text outside the block is
+preserved. Operations are idempotent.
 
 Usage:
   merge-lines.py --file TARGET --block-file BLOCK --begin BEGIN --end END
+  merge-lines.py --remove --file TARGET --begin BEGIN --end END
   merge-lines.py --check ...   compare instead of printing
 
 Exit codes:
@@ -45,11 +47,32 @@ def build(original, block, begin, end):
     return wrapped + "\n"
 
 
+def build_remove(original, begin, end):
+    if begin not in original:
+        if end in original:
+            raise InvalidInput(f"end marker without begin marker: {end!r}")
+        return original
+    pre, rest = original.split(begin, 1)
+    if end not in rest:
+        raise InvalidInput(f"begin marker without end marker: {begin!r}")
+    _, post = rest.split(end, 1)
+    pre = pre.rstrip("\n")
+    post = post.strip("\n")
+    parts = [part for part in (pre, post) if part]
+    if not parts:
+        return ""
+    return "\n\n".join(parts) + "\n"
+
+
 def parse(argv):
     args = list(argv)
     check = False
-    if args and args[0] == "--check":
-        check = True
+    remove = False
+    while args and args[0] in ("--check", "--remove"):
+        if args[0] == "--check":
+            check = True
+        else:
+            remove = True
         args = args[1:]
 
     values = {"file": None, "block-file": None, "begin": None, "end": None}
@@ -61,10 +84,11 @@ def parse(argv):
             index += 2
         else:
             raise InvalidInput(f"unexpected argument: {key}")
-    missing = [name for name, value in values.items() if value is None]
+    required = ["file", "begin", "end"] if remove else list(values)
+    missing = [name for name in required if values[name] is None]
     if missing:
         raise InvalidInput("missing required option(s): " + ", ".join("--" + m for m in missing))
-    return check, values
+    return check, remove, values
 
 
 def read_text(path, required):
@@ -79,20 +103,21 @@ def read_text(path, required):
 
 def main(argv):
     try:
-        check, values = parse(argv)
+        check, remove, values = parse(argv)
     except InvalidInput as exc:
         print(f"merge-lines: {exc}", file=sys.stderr)
         return 2
 
     try:
-        block = read_text(values["block-file"], required=True).strip("\n")
         original = read_text(values["file"], required=False)
+        if remove:
+            merged = build_remove(original, values["begin"], values["end"])
+        else:
+            block = read_text(values["block-file"], required=True).strip("\n")
+            merged = build(original, block, values["begin"], values["end"])
     except FileNotFoundError as exc:
         print(f"merge-lines: file not found: {exc.filename}", file=sys.stderr)
         return 1
-
-    try:
-        merged = build(original, block, values["begin"], values["end"])
     except InvalidInput as exc:
         print(f"merge-lines: {exc}", file=sys.stderr)
         return 1
