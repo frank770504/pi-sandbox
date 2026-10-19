@@ -1,0 +1,3 @@
+# Python caches created by running the installer helpers.
+__pycache__/
+*.pyc
