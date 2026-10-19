@@ -20,10 +20,10 @@ pi-session-snapshot	copy	config/pi/extensions/session-snapshot.ts	~/.pi/agent/ex
 pi-popular-models	copy	tools/popular-models/popular-models.ts	~/.pi/agent/extensions/popular-models.ts	pi read-only extension
 pi-snap	copy	tools/pi-snap	~/.pi/agent/bin/pi-snap	snapshot CLI
 
-common-catch-up-pi	link	skills/common/catch-up-project	~/.pi/agent/skills/catch-up-project	shared skill
-common-catch-up-agy	link	skills/common/catch-up-project	~/.gemini/config/skills/catch-up-project	shared skill
-common-grill-me-pi	link	skills/common/grill-me	~/.pi/agent/skills/grill-me	shared skill
-common-grill-me-agy	link	skills/common/grill-me	~/.gemini/config/skills/grill-me	shared skill
+common-catch-up-pi	link	skills/common/catch-up-project	~/.pi/agent/skills/catch-up-project	shared source; existing directory migration is opt-in and backed up
+common-catch-up-agy	link	skills/common/catch-up-project	~/.gemini/config/skills/catch-up-project	shared source; legacy directory migration is opt-in and backed up
+common-grill-me-pi	link	skills/common/grill-me	~/.pi/agent/skills/grill-me	shared source; existing directory migration is opt-in and backed up
+common-grill-me-agy	link	skills/common/grill-me	~/.gemini/config/skills/grill-me	shared source; legacy directory migration is opt-in and backed up
 
 agy-settings	merge	config/agy/settings.template.json	~/.gemini/antigravity-cli/settings.json	managed editor/theme/notification/status + additive named MCP allow; preserve model, deny rules, trustedWorkspaces
 agy-keybindings	merge	config/agy/keybindings.template.json	~/.gemini/antigravity-cli/keybindings.json	managed keys only; preserve unrelated user bindings
@@ -39,7 +39,7 @@ pi-models-store	runtime	-	~/.pi/agent/models-store.json	pi-managed cache; never 
 
 pi-typesafe-secret	secret	~/.config/typesafe/jev_api_key	~/.pi/agent/secrets/typesafe_api_key	link to the single owner-only key file; never copy the value
 
-external-code-review	link	tools/skills.lock	~/.pi/agent/skills/code-review-skill	pinned clone, then symlink
-external-code-review-agy	link	tools/skills.lock	~/.gemini/config/skills/code-review-skill	pinned clone, then symlink
-external-science-skills	link	tools/skills.lock	~/.pi/agent/skills/science_skills_common	pinned clone, then symlink
-external-science-uv	link	tools/skills.lock	~/.pi/agent/skills/uv	pinned clone, then symlink
+external-code-review	link	tools/skills.lock	~/.pi/agent/skills/code-review-skill	pinned source root; preserve equivalent links
+external-code-review-agy	link	tools/skills.lock	~/.gemini/config/skills/code-review-skill	pinned clone; preserve equivalent legacy link
+external-science-common	link	tools/skills.lock	~/.pi/agent/skills/science_skills_common	Pi-only pinned science-skills subdirectory
+external-science-uv	link	tools/skills.lock	~/.pi/agent/skills/uv	Pi-only pinned science-skills subdirectory

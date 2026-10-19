@@ -1,11 +1,11 @@
 # External agent skills provisioned by this repo.
-# Tab-separated: name, url, commit, clone_dir, pi_link, agy_link
-# - clone_dir is created by the installer; if it already exists and is a Git
-#   repo, the installer checks out the pinned commit instead of re-cloning.
-# - a link column of "-" means the skill is not linked into that tool.
-# - pi_link/agy_link are relative to the tool's skill directory; a trailing
-#   slash means "link this directory itself", otherwise the named subdirectory.
+# Tab-separated: name, url, commit, clone_dir, source_subdir, pi_link, agy_link
+# Clone directories may be overridden with PI_SANDBOX_SKILLS_ROOT. The installer
+# checks the origin, clean worktree, and pinned commit before making links.
+# `source_subdir` is relative to the clone root; `.` means the root itself.
+# `pi_link`/`agy_link` are relative to each tool's global skills directory;
+# `-` means do not link the skill into that tool.
 
-code-review-skill	https://github.com/awesome-skills/code-review-skill.git	eb12fb247ba09fd8a2bce0d1ecafa99df0bf4891	~/Code/3party/code-review-skill	code-review-skill	code-review-skill
-
-science-skills	https://github.com/google-deepmind/science-skills.git	0b72c64f63bc5ddf0e5fe96b8c3eb02e10fd5ef8	~/Code/3party/science-skills	-	-
+code-review-skill	https://github.com/awesome-skills/code-review-skill.git	eb12fb247ba09fd8a2bce0d1ecafa99df0bf4891	~/Code/3party/code-review-skill	.	code-review-skill	code-review-skill
+science-skills-common	https://github.com/google-deepmind/science-skills.git	0b72c64f63bc5ddf0e5fe96b8c3eb02e10fd5ef8	~/Code/3party/science-skills	skills/science_skills_common	science_skills_common	-
+science-uv	https://github.com/google-deepmind/science-skills.git	0b72c64f63bc5ddf0e5fe96b8c3eb02e10fd5ef8	~/Code/3party/science-skills	skills/uv	uv	-
