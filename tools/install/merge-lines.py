@@ -32,7 +32,7 @@ def build(original, block, begin, end):
         pre, rest = original.split(begin, 1)
         _, post = rest.split(end, 1)
         pre = pre.rstrip("\n")
-        post = post.lstrip("\n")
+        post = post.strip("\n")
         parts = [part for part in (pre, wrapped, post) if part]
         return "\n\n".join(parts) + "\n"
 

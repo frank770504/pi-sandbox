@@ -29,7 +29,7 @@ This workflow supports repo-aware planning and bounded automation. For tasks cov
 ### pi-jev feature boundaries
 
 - Apply the same data-minimization and consent rules to every TypeSafe call, including tool/skill discovery, evaluations, gates, and compaction. If sharing safety is uncertain, omit the detail or skip that Jev feature.
-- Keep `/jev auto`, `/jev auto-agents`, `/jev agents`, `/jev tool-guard`, and `/jev auto-model` off for this pilot. Keep `/jev test` for ad hoc exploration, not the fixed scoring loop.
+- Automatic per-prompt tool/skill routing (`/jev auto`) is enabled globally through `PI_JEV_AUTO=1` in the shell profile; it sends only a minimized routing summary and costs one Jev request per prompt. Keep `/jev auto-agents`, `/jev agents`, `/jev tool-guard`, `/jev auto-model`, and `/jev thinking` off for this pilot. Keep `/jev test` for ad hoc exploration, not the fixed scoring loop.
 - Jev compaction is optional and manual (`/jev compact on`, then `/compact`), only in a session whose history is safe to send to TypeSafe.
 - Final reports must show all returned planning-evaluation result fields per round and all returned gate result fields, including its criterion, probability, threshold, decision, and any explanation. Show deterministic test results separately; never combine them into one quality score.
 

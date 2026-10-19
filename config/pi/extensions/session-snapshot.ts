@@ -13,6 +13,23 @@ import { join } from "node:path";
 const SNAP_SCRIPT = join(homedir(), ".pi", "agent", "bin", "pi-snap");
 const MIN_INTERVAL_MS = 60_000;
 
+type NotifyCtx = {
+  hasUI: boolean;
+  ui: { notify(message: string, type: "info" | "error"): void };
+};
+
+// The session may be replaced or torn down (for example by `pi -p`) before the
+// snapshot child exits, which makes the captured context stale. Report only in
+// an interactive session and never let notification failures crash Pi.
+function safeNotify(ctx: NotifyCtx, message: string, type: "info" | "error") {
+  try {
+    if (!ctx.hasUI) return;
+    ctx.ui.notify(message, type);
+  } catch {
+    // Session replaced or UI gone; nothing to report.
+  }
+}
+
 export default function (pi: ExtensionAPI) {
   pi.on("session_start", async (event, ctx) => {
     // "reload" happens mid-session (config reload), not a work boundary.
@@ -40,13 +57,13 @@ export default function (pi: ExtensionAPI) {
     child.stdout.on("data", (d) => (out += d.toString()));
     child.stderr.on("data", (d) => (err += d.toString()));
     child.on("error", (e) => {
-      ctx.ui.notify(`pi-snap failed to start: ${e.message}`, "error");
+      safeNotify(ctx, `pi-snap failed to start: ${e.message}`, "error");
     });
     child.on("close", (code) => {
       if (code === 0) {
-        ctx.ui.notify(`Snapshot: ${out.trim()}`, "info");
+        safeNotify(ctx, `Snapshot: ${out.trim()}`, "info");
       } else {
-        ctx.ui.notify(`pi-snap failed (exit ${code}): ${err.trim()}`, "error");
+        safeNotify(ctx, `pi-snap failed (exit ${code}): ${err.trim()}`, "error");
       }
     });
   });

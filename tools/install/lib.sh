@@ -125,6 +125,10 @@ install_block() {
 install_copy() {
   local src="$1" target="$2" mode="${3:-0644}" label="${4:-$2}"
   [ -e "$src" ] || die "source not found: $src"
+  if [ -d "$target" ] && [ ! -L "$target" ]; then
+    warn "refusing to overwrite directory: $target"
+    return 1
+  fi
 
   if [ -L "$target" ] && [ "$(readlink -f "$target" 2>/dev/null)" = "$(readlink -f "$src" 2>/dev/null)" ]; then
     info "unchanged: $label"; return 0
@@ -145,6 +149,10 @@ install_copy() {
 install_link() {
   local src="$1" target="$2" label="${3:-$2}"
   [ -e "$src" ] || die "source not found: $src"
+  if [ -d "$target" ] && [ ! -L "$target" ]; then
+    warn "refusing to replace directory with symlink: $target"
+    return 1
+  fi
 
   if [ -L "$target" ] && [ "$(readlink "$target")" = "$src" ]; then
     info "unchanged: $label"; return 0
