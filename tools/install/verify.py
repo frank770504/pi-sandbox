@@ -268,8 +268,22 @@ class Verifier:
         self.result("AGY status line enabled", isinstance(status_line, dict) and status_line.get("enabled") is True)
         permissions = agy_settings.get("permissions") or {}
         allow = permissions.get("allow", []) if isinstance(permissions, dict) else []
+        deny = permissions.get("deny", []) if isinstance(permissions, dict) else []
+        self.result("AGY shell commands auto-allowed", isinstance(allow, list) and "command(*)" in allow)
+        self.result("AGY Jev MCP server auto-allowed", isinstance(allow, list) and "mcp(pi-sandbox-jev)" in allow)
         for tool in ("jev_evaluate", "jev_gate"):
             self.result(f"AGY MCP permission: {tool}", isinstance(allow, list) and f"mcp(pi-sandbox-jev/{tool})" in allow)
+        required_denials = (
+            "command(rm -rf *)",
+            "command(sudo *)",
+            "command(dd *)",
+            "command(mkfs *)",
+            "command(chmod *)",
+            "command(git push --force*)",
+            "command(git reset --hard*)",
+        )
+        for pattern in required_denials:
+            self.result(f"AGY command denied: {pattern}", isinstance(deny, list) and pattern in deny)
 
         keybindings = self.load_json(agy_state / "keybindings.json", "AGY keybindings JSON") or {}
         required_bindings = {

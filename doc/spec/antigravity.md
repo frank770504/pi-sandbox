@@ -8,15 +8,16 @@ AGY's CLI state is under `~/.gemini/antigravity-cli/`:
 
 | Repo source | Live file | Managed values |
 |---|---|---|
-| `config/agy/settings.template.json` | `settings.json` | editor `vim`, dark color scheme, notifications, status line, narrow Jev MCP tool permissions |
+| `config/agy/settings.template.json` | `settings.json` | editor `vim`, dark color scheme, notifications, status line, shell-command allow/deny policy, Jev MCP allow rules |
 | `config/agy/keybindings.template.json` | `keybindings.json` | multiline input, Vim insert submit, conversation item rename/delete |
 
-JSON settings are merged. The installer preserves the existing model, trusted workspaces, deny rules, and unrelated settings. For automatic non-interactive Jev planning it adds only:
+JSON settings are merged. The installer preserves the existing model, trusted workspaces, non-workspace access, and unrelated settings. The permission policy is appended additively to `permissions.allow` and `permissions.deny`:
 
-- `mcp(pi-sandbox-jev/jev_evaluate)`
-- `mcp(pi-sandbox-jev/jev_gate)`
+- allow `command(*)` (all shell commands) and `mcp(pi-sandbox-jev)`
+- allow `mcp(pi-sandbox-jev/jev_evaluate)` and `mcp(pi-sandbox-jev/jev_gate)`, required because AGY headless mode denies MCP calls that still require permission prompts
+- deny `command(rm -rf *)`, `command(sudo *)`, `command(dd *)`, `command(mkfs *)`, `command(chmod *)`, `command(git push --force*)`, `command(git reset --hard*)`
 
-These narrow allow entries are required because AGY headless mode denies MCP calls that still require permission prompts. Existing allow and deny rules are preserved.
+Both paths are add-only, so existing allow and deny rules are preserved. Deny rules win over the blanket `command(*)` allow.
 
 ## Jev plugin, skills, and hooks
 
@@ -42,4 +43,4 @@ A verified synthetic session successfully completed a Jev evaluation after retry
 
 ## User-managed AGY state
 
-The installer does not replace the user's model, workspace trust list, permissions deny rules, OAuth credentials, session history, or unrelated global instructions. It removes only the marked repo-managed Jev block from `~/.gemini/GEMINI.md` (after backing the file up) because the plugin now owns that workflow rule. AGY login and trusted-workspace choices remain user actions.
+The installer does not replace the user's model, workspace trust list, non-workspace access, OAuth credentials, session history, or unrelated global instructions. It appends the managed command allow/deny and Jev MCP allow rules to the existing permission lists without removing user rules. It removes only the marked repo-managed Jev block from `~/.gemini/GEMINI.md` (after backing the file up) because the plugin now owns that workflow rule. AGY login and trusted-workspace choices remain user actions.

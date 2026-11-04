@@ -10,9 +10,9 @@
 #
 # Manages: CLI settings merge, keybindings merge, the Jev plugin (rule + hooks),
 # removal of the legacy managed GEMINI.md rule block, the MCP registration, and
-# the adapter build. Model, deny rules, non-workspace access, and trusted
-# workspaces are preserved; only the two named Jev MCP tools are added to the
-# existing permissions.allow array.
+# the adapter build. The command allow/deny policy and named Jev MCP allow rules
+# are appended additively to permissions.allow and permissions.deny. Model,
+# non-workspace access, and trusted workspaces are preserved.
 
 set -euo pipefail
 
@@ -56,7 +56,8 @@ info "Antigravity config install into $AGY_STATE"
 
 # 1. CLI settings: merge managed keys only.
 install_json_merge "$REPO_ROOT/config/agy/settings.template.json" "$AGY_SETTINGS" "agy settings" \
-  --append-path permissions.allow
+  --append-path permissions.allow \
+  --append-path permissions.deny
 
 # 2. Keybindings: merge managed keys only, preserving user overrides.
 install_json_merge "$REPO_ROOT/config/agy/keybindings.template.json" "$AGY_KEYBINDINGS" "agy keybindings"
@@ -73,8 +74,9 @@ install_link "$PLUGIN_SOURCE" "$PLUGIN_TARGET" "agy Jev plugin"
 # 5. Migrate the old hand-edited rule block out of GEMINI.md (idempotent).
 remove_block "$GEMINI" "$RULE_BEGIN" "$RULE_END" "GEMINI.md legacy Jev rule block"
 
-# 6. MCP permission + registration: grant only this named Jev server and keep
-# an existing registration untouched; register only when missing.
+# 6. MCP registration: keep an existing registration untouched; register only
+# when missing. (The named Jev server/tools are already allowed by the merge in
+# step 1.)
 if command -v agy >/dev/null 2>&1; then
   MCP_LIST="$(agy mcp list 2>/dev/null)" || die "could not query AGY MCP registrations"
   if printf '%s\n' "$MCP_LIST" | grep -Fq "$MCP_NAME"; then

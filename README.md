@@ -80,7 +80,7 @@ tools/install/verify.sh --strict-credentials
 ### 5. Start new sessions
 
 - In an interactive Bash shell, run `source ~/.bashrc` if needed, then start `pi`. `/jev status` should show automatic routing enabled. Pi's `PI_JEV_AUTO=1` enables a Jev tool/skill routing request per prompt; it requires a configured key and incurs a Jev request per prompt.
-- Start a new `agy` session after installation. The Jev plugin supplies the global development rule, session-start and first-invocation reminders, the Jev skill, and permissions for the named `jev_evaluate` and `jev_gate` tools. For software-development tasks the rule instructs AGY to evaluate plans with Jev. AGY automation is instruction-and-hook based, not a hard guarantee that every kind of task will call Jev. A live synthetic Jev smoke test is described in [`doc/spec/antigravity.md`](doc/spec/antigravity.md).
+- Start a new `agy` session after installation. The Jev plugin supplies the global development rule, session-start and first-invocation reminders, the Jev skill, and the managed shell-command allow/deny policy plus permissions for the `pi-sandbox-jev` server and its named `jev_evaluate` and `jev_gate` tools. For software-development tasks the rule instructs AGY to evaluate plans with Jev. AGY automation is instruction-and-hook based, not a hard guarantee that every kind of task will call Jev. A live synthetic Jev smoke test is described in [`doc/spec/antigravity.md`](doc/spec/antigravity.md).
 
 ## Installer commands
 
@@ -121,7 +121,9 @@ See [`config/manifest.tsv`](config/manifest.tsv) for the complete source/target/
 
 ## State intentionally kept outside the repository
 
-The installers never copy or commit provider credentials, TypeSafe keys, Pi auth, project trust decisions, AGY trusted workspaces, conversation history, or machine-specific model/permission choices. AGY's `editor`, color scheme, notifications, status line, keybindings, plugin enablement, and narrow named Jev MCP allow rules are managed; its model, deny rules, workspace trust, and other user permissions are preserved.
+The installers never copy or commit provider credentials, TypeSafe keys, Pi auth, project trust decisions, AGY trusted workspaces, conversation history, or machine-specific model choices. AGY's `editor`, color scheme, notifications, status line, keybindings, plugin enablement, and its permission policy are managed: the shell-command allow/deny rules and the Jev MCP allow rules are merged into `permissions.allow`/`permissions.deny` **additively**, so existing user rules are preserved and never replaced. Its model, workspace trust, non-workspace access, and any other user settings are preserved.
+
+The managed AGY command policy (`config/agy/settings.template.json`) auto-allows `command(*)` and denies destructive commands (`rm -rf *`, `sudo *`, `dd *`, `mkfs *`, `chmod *`, `git push --force*`, `git reset --hard*`); deny rules win over the blanket allow.
 
 External skills are pinned by commit. By default they are cloned under `~/Code/3party`; set `PI_SANDBOX_SKILLS_ROOT` to choose another parent directory. The `fd` binary present on the original machine is not vendored by this repo; install `fd-find` (or an equivalent `fd`) separately if you want that optional helper.
 

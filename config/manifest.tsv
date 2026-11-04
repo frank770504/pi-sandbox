@@ -27,7 +27,7 @@ common-catch-up-agy	link	skills/common/catch-up-project	~/.gemini/config/skills/
 common-grill-me-pi	link	skills/common/grill-me	~/.pi/agent/skills/grill-me	shared source; existing directory migration is opt-in and backed up
 common-grill-me-agy	link	skills/common/grill-me	~/.gemini/config/skills/grill-me	shared source; legacy directory migration is opt-in and backed up
 
-agy-settings	merge	config/agy/settings.template.json	~/.gemini/antigravity-cli/settings.json	managed editor/theme/notification/status + additive named MCP allow; preserve model, deny rules, trustedWorkspaces
+agy-settings	merge	config/agy/settings.template.json	~/.gemini/antigravity-cli/settings.json	managed editor/theme/notification/status + additive command allow/deny policy and MCP allow; preserve model, trustedWorkspaces
 agy-keybindings	merge	config/agy/keybindings.template.json	~/.gemini/antigravity-cli/keybindings.json	managed keys only; preserve unrelated user bindings
 agy-plugin-discovery	merge	config/agy/plugins.template.json	~/.gemini/config/plugins.json	add plugins directory to discovery entries
 agy-plugin-enable	merge	config/agy/plugin-enable.template.json	~/.gemini/config/config.json	enable only this repo-managed plugin; preserve other settings

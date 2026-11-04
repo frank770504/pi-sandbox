@@ -4,8 +4,19 @@
   "notifications": true,
   "permissions": {
     "allow": [
+      "command(*)",
+      "mcp(pi-sandbox-jev)",
       "mcp(pi-sandbox-jev/jev_evaluate)",
       "mcp(pi-sandbox-jev/jev_gate)"
+    ],
+    "deny": [
+      "command(rm -rf *)",
+      "command(sudo *)",
+      "command(dd *)",
+      "command(mkfs *)",
+      "command(chmod *)",
+      "command(git push --force*)",
+      "command(git reset --hard*)"
     ]
   },
   "statusLine": {

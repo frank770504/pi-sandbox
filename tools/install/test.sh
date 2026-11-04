@@ -57,20 +57,23 @@ python3 "$DIR/merge-json.py" --check "$TMP/t.json" "$TMP/merged.json" >/dev/null
 expect_rc "check identical" 0 $?
 
 cat > "$TMP/additive-template.json" <<'EOF'
-{"permissions": {"allow": ["mcp(pi-sandbox-jev)"]}, "entries": [{"path": "plugins"}], "packages": ["npm:pi-jev"]}
+{"permissions": {"allow": ["mcp(pi-sandbox-jev)"], "deny": ["command(rm -rf *)"]}, "entries": [{"path": "plugins"}], "packages": ["npm:pi-jev"]}
 EOF
 cat > "$TMP/additive-target.json" <<'EOF'
-{"permissions": {"allow": ["command(*)", "mcp(existing)"]}, "entries": [{"path": "other"}], "packages": ["npm:existing"]}
+{"permissions": {"allow": ["command(*)", "mcp(existing)"], "deny": ["command(sudo *)"]}, "entries": [{"path": "other"}], "packages": ["npm:existing"]}
 EOF
-python3 "$DIR/merge-json.py" --append-path permissions.allow --append-path entries --append-path packages \
+python3 "$DIR/merge-json.py" --append-path permissions.allow --append-path permissions.deny --append-path entries --append-path packages \
   "$TMP/additive-template.json" "$TMP/additive-target.json" > "$TMP/additive-merged.json"
 expect_eq "additive permission preserves existing rules" "3" "$(json "['permissions']['allow'].__len__()" "$TMP/additive-merged.json")"
 expect_eq "additive permission appended" "mcp(pi-sandbox-jev)" "$(json "['permissions']['allow'][2]" "$TMP/additive-merged.json")"
+expect_eq "additive deny preserves existing rules" "2" "$(json "['permissions']['deny'].__len__()" "$TMP/additive-merged.json")"
+expect_eq "additive deny keeps existing rule" "command(sudo *)" "$(json "['permissions']['deny'][0]" "$TMP/additive-merged.json")"
+expect_eq "additive deny appended" "command(rm -rf *)" "$(json "['permissions']['deny'][1]" "$TMP/additive-merged.json")"
 expect_eq "additive entries preserve existing entry" "other" "$(json "['entries'][0]['path']" "$TMP/additive-merged.json")"
 expect_eq "additive entries appended" "plugins" "$(json "['entries'][1]['path']" "$TMP/additive-merged.json")"
 expect_eq "additive packages preserve existing package" "npm:existing" "$(json "['packages'][0]" "$TMP/additive-merged.json")"
 expect_eq "additive packages appended" "npm:pi-jev" "$(json "['packages'][1]" "$TMP/additive-merged.json")"
-python3 "$DIR/merge-json.py" --append-path permissions.allow --append-path entries --append-path packages \
+python3 "$DIR/merge-json.py" --append-path permissions.allow --append-path permissions.deny --append-path entries --append-path packages \
   --check "$TMP/additive-template.json" "$TMP/additive-merged.json" >/dev/null 2>&1
 expect_rc "additive merge idempotent" 0 $?
 

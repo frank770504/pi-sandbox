@@ -137,7 +137,7 @@ PY
 expect 'Pi Jev package installed by command shim' test -f "$HOME_TEST/.pi/agent/npm/node_modules/pi-jev/package.json"
 expect 'AGY unrelated settings and deny preserved' python3 - "$HOME_TEST/.gemini/antigravity-cli/settings.json" <<'PY'
 import json,sys
-d=json.load(open(sys.argv[1])); assert d['model']['name']=='fixture-model'; assert d['trustedWorkspaces']==['fixture-workspace']; assert 'command(sudo *)' in d['permissions']['deny']; assert d['fixtureAgy']=='keep'; assert 'mcp(pi-sandbox-jev/jev_evaluate)' in d['permissions']['allow']
+d=json.load(open(sys.argv[1])); assert d['model']['name']=='fixture-model'; assert d['trustedWorkspaces']==['fixture-workspace']; assert 'command(sudo *)' in d['permissions']['deny']; assert 'command(rm -rf *)' in d['permissions']['deny']; assert 'command(*)' in d['permissions']['allow']; assert 'mcp(pi-sandbox-jev)' in d['permissions']['allow']; assert d['fixtureAgy']=='keep'; assert 'mcp(pi-sandbox-jev/jev_evaluate)' in d['permissions']['allow']
 PY
 expect 'AGY unrelated keybinding preserved' python3 - "$HOME_TEST/.gemini/antigravity-cli/keybindings.json" <<'PY'
 import json,sys
