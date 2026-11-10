@@ -1,8 +1,15 @@
-
 {
-    "tui.editor.cursorUp": ["up", "alt+k"],
-    "tui.editor.cursorDown": ["down", "alt+j"],
-    "tui.editor.cursorLeft": ["left", "alt+h"],
-    "tui.editor.cursorRight": ["right", "alt+l"],
-    "tui.input.newLine": ["alt+enter", "ctrl+j"]
+  "$schema": "https://pi.dev/schemas/keybindings.schema.json",
+  "tui.editor.cursorUp": ["up", "ctrl+alt+k"],
+  "tui.editor.cursorDown": ["down", "ctrl+alt+j"],
+  "tui.editor.cursorLeft": ["left", "ctrl+alt+h"],
+  "tui.editor.cursorRight": ["right", "ctrl+alt+l"],
+  "tui.input.newLine": ["alt+enter", "ctrl+j"],
+
+  "tui.altScreen.lineUp": "alt+k",
+  "tui.altScreen.lineDown": "alt+j",
+  "tui.altScreen.halfPageUp": "alt+u",
+  "tui.altScreen.halfPageDown": "alt+e",
+  "tui.altScreen.top": ["ctrl+home", "alt+g"],
+  "tui.altScreen.bottom": "ctrl+end"
 }
