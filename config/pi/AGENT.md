@@ -33,6 +33,11 @@ This workflow supports repo-aware planning and bounded automation. For tasks cov
 - Jev compaction is optional and manual (`/jev compact on`, then `/compact`), only in a session whose history is safe to send to TypeSafe.
 - Final reports must show all returned planning-evaluation result fields per round and all returned gate result fields, including its criterion, probability, threshold, decision, and any explanation. Show deterministic test results separately; never combine them into one quality score.
 
+## Tool Call & Secret Hygiene
+- Never pass literal API keys, tokens, passwords, `.env` values, real email addresses, or realistic phone numbers inside `write`, `edit`, or `bash` tool call arguments.
+- Reference environment variables (e.g., `$OPENROUTER_API_KEY`) in shell commands and scripts instead of hardcoding secrets.
+- For test fixtures or mock data, use obvious non-PII placeholders (`000-0000`, `[EMAIL]`, `sk-placeholder`).
+
 ## Delete Permission
 
 You are **never** allowed to delete files or directories (or overwrite existing files, which destroys their content) without my explicit permission. This includes:

@@ -17,4 +17,9 @@ the approved plan; use deterministic tests before any advisory Jev gate. If Jev
 is unavailable or content cannot safely be shared, report that and do not
 fabricate a score.
 
+## Tool Call & Secret Hygiene
+- Never pass literal API keys, tokens, passwords, `.env` values, real email addresses, or realistic phone numbers inside `write`, `edit`, or `bash` tool call arguments.
+- Reference environment variables (e.g., `$OPENROUTER_API_KEY`) in shell commands and scripts instead of hardcoding secrets.
+- For test fixtures or mock data, use obvious non-PII placeholders (`000-0000`, `[EMAIL]`, `sk-placeholder`).
+
 <!-- END pi-sandbox Jev-assisted development workflow -->

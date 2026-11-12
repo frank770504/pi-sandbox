@@ -8,6 +8,7 @@ The global instructions enforce:
 - A bounded, privacy-minimized Jev planning evaluation for software-development tasks.
 - The repo's approval flow, deterministic test requirements, and advisory gate policy.
 - Explicit user permission before deleting files or overwriting existing content.
+- Tool-call secret hygiene: keep literal secrets, `.env` values, and real PII out of `write`, `edit`, and `bash` arguments; use environment-variable references and obvious placeholders.
 - Automatic Pi Jev routing enabled through `PI_JEV_AUTO=1`; this sends a minimized routing summary once per prompt and costs one Jev request per prompt.
 - Automatic Jev agents, model selection, thinking, tool guard, and compaction remain off unless explicitly chosen.
 

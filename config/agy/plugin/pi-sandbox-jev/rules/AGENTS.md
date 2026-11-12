@@ -20,3 +20,8 @@ planning round before asking for approval.
 - After approval, stay within the approved plan. Run deterministic tests before
   any advisory Jev gate. If Jev is unavailable or the state cannot be safely
   shared, report that instead of fabricating a score or a gate result.
+
+## Tool Call & Secret Hygiene
+- Never pass literal API keys, tokens, passwords, `.env` values, real email addresses, or realistic phone numbers inside `write`, `edit`, or `bash` tool call arguments.
+- Reference environment variables (e.g., `$OPENROUTER_API_KEY`) in shell commands and scripts instead of hardcoding secrets.
+- For test fixtures or mock data, use obvious non-PII placeholders (`000-0000`, `[EMAIL]`, `sk-placeholder`).

@@ -23,7 +23,7 @@ Both paths are add-only, so existing allow and deny rules are preserved. Deny ru
 
 The repo-managed plugin is `config/agy/plugin/pi-sandbox-jev/`, linked to `~/.gemini/config/plugins/pi-sandbox-jev`. Discovery is enabled through `~/.gemini/config/plugins.json`; `~/.gemini/config/config.json` records the enabled state. It contains:
 
-- `rules/AGENTS.md`: development planning must use the repo-aware Jev workflow and honor approval/secret rules.
+- `rules/AGENTS.md`: development planning must use the repo-aware Jev workflow and honor approval/secret rules, including tool-call hygiene for secrets and PII.
 - `skills/jev-development/SKILL.md`: detailed planning, validation, and advisory gate procedure.
 - `hooks.json`: `SessionStart` and first-invocation `PreInvocation` reminder hooks.
 
