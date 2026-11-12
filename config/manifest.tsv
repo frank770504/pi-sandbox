@@ -19,6 +19,7 @@ pi-agent	copy	config/pi/AGENT.md	~/.pi/agent/AGENT.md	pi global instructions
 pi-keybindings	copy	config/pi/keybindings.json	~/.pi/agent/keybindings.json	pi TUI keybindings
 pi-delete-guard	copy	config/pi/extensions/delete-guard.ts	~/.pi/agent/extensions/delete-guard.ts	pi extension
 pi-session-snapshot	copy	config/pi/extensions/session-snapshot.ts	~/.pi/agent/extensions/session-snapshot.ts	pi extension
+pi-openrouter-sanitizer	copy	config/pi/extensions/openrouter-sanitizer.ts	~/.pi/agent/extensions/openrouter-sanitizer.ts	sanitizes role delimiters and masks secret/PII patterns in provider context
 pi-popular-models	copy	tools/popular-models/popular-models.ts	~/.pi/agent/extensions/popular-models.ts	pi read-only extension
 pi-snap	copy	tools/pi-snap	~/.pi/agent/bin/pi-snap	snapshot CLI
 

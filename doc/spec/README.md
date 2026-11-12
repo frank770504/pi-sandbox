@@ -21,7 +21,7 @@ This repo describes and installs repo-managed Pi and Antigravity configuration. 
 
 1. Pi defaults are OpenRouter `cohere/north-mini-code:free`, high thinking, ask trust, dark theme, and `npm:pi-jev`.
 2. Pi automatic Jev tool/skill routing is enabled by `PI_JEV_AUTO=1`; other automatic Jev modes remain off.
-3. Pi has a destructive-operation guard, automatic session snapshot, and popular-models transcript widget.
+3. Pi has a destructive-operation guard, automatic session snapshot, provider-context sanitizer, and popular-models transcript widget.
 4. AGY uses Vim editor mode, managed keybindings, an always-on Jev plugin rule, session hooks, and the local `pi-sandbox-jev` MCP adapter.
 5. `skills/common/` is the single source for the shared catch-up and grill-me skills, linked into Pi and AGY. Third-party skill repos are pinned in `tools/skills.lock`.
 6. `pi-snap` provides a manual and session-start rollback safety net. This is not process isolation.

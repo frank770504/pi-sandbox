@@ -50,7 +50,23 @@ Align→Plan→Wait flow; it only *reads* the project (plus writes under
 `~/.pi/snapshots/`), so it does not violate the AGENT.md no-edit-before-approval
 rule.
 
-## 3. `popular-models.ts` — read-only top-model conversation info
+## 3. `openrouter-sanitizer.ts` — sanitize provider context
+
+Hooks the `context` event before each LLM request. It defangs XML/ChatML-style
+role delimiters and bracketed role headers, and masks recognized private-key,
+API-token, bearer-token, email, and phone patterns. Secret/PII masking applies
+to visible string content, text and thinking blocks, and recursively to
+`toolCall` arguments; the two masking scopes are controlled by the extension's
+configuration constants. It only returns a replacement message list when
+content changes, preserving otherwise unchanged context and cache prefixes.
+
+The hook operates on Pi's context copy and does not rewrite the stored session
+transcript or TUI history. It does not inspect image data, opaque signatures, or
+tool-result metadata, and its regular expressions cannot identify every secret
+format (for example, arbitrary password strings); avoid putting secrets in tool
+inputs rather than relying on this heuristic filter.
+
+## 4. `popular-models.ts` — read-only top-model conversation info
 
 Vendored in `tools/popular-models/` with an installer. Install with:
 

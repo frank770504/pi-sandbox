@@ -242,6 +242,7 @@ class Verifier:
             "keybindings.json": REPO_ROOT / "config/pi/keybindings.json",
             "extensions/delete-guard.ts": REPO_ROOT / "config/pi/extensions/delete-guard.ts",
             "extensions/session-snapshot.ts": REPO_ROOT / "config/pi/extensions/session-snapshot.ts",
+            "extensions/openrouter-sanitizer.ts": REPO_ROOT / "config/pi/extensions/openrouter-sanitizer.ts",
             "extensions/popular-models.ts": REPO_ROOT / "tools/popular-models/popular-models.ts",
         }
         for relative, source in pi_sources.items():
