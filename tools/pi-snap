@@ -54,8 +54,13 @@ confirm() {
 # Prune a project's snapshots to the newest N.
 prune_project() {
   local base="$1" n="${2:-$KEEP}"
-  local snaps=()
-  mapfile -t snaps < <(find "$base" -maxdepth 1 -type d -name 'snap-*' -printf '%f\n' | sort)
+  local snaps=() path
+  # Bash 3.2 (the macOS system Bash) has no mapfile, and BSD find has no
+  # -printf. Snapshot names are controlled timestamps, so a shell glob is enough.
+  for path in "$base"/snap-*; do
+    [ -d "$path" ] && [ ! -L "$path" ] || continue
+    snaps+=("${path##*/}")
+  done
   if [ "${#snaps[@]}" -gt "$n" ]; then
     local excess=$(( ${#snaps[@]} - n )) d
     for d in "${snaps[@]:0:$excess}"; do
@@ -73,11 +78,11 @@ do_create() {
   local dest="$base/snap-$(ts)"
   mkdir -p "$base"
   printf '%s\n' "$src" > "$base/.source"   # metadata: source path
-  local link_args=()
   if [ -e "$latest" ] || [ -L "$latest" ]; then
-    link_args=(--link-dest="$(readlink -f "$latest")")
+    rsync -a --delete "${EXCLUDES[@]}" --link-dest="$(readlink -f "$latest")" "$src/" "$dest/"
+  else
+    rsync -a --delete "${EXCLUDES[@]}" "$src/" "$dest/"
   fi
-  rsync -a --delete "${EXCLUDES[@]}" "${link_args[@]}" "$src/" "$dest/"
   ln -sfn "$dest" "$latest"
   prune_project "$base" "$KEEP"
   echo "$dest"
