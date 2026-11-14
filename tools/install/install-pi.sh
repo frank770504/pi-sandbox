@@ -103,6 +103,7 @@ fi
 # 2. Files.
 install_copy "$REPO_ROOT/config/pi/AGENT.md" "$PI_DIR/AGENT.md" 0644 "AGENT.md"
 install_copy "$REPO_ROOT/config/pi/keybindings.json" "$PI_DIR/keybindings.json" 0644 "keybindings.json"
+install_copy "$REPO_ROOT/config/pi/prompts/audit-sync.md" "$PI_DIR/prompts/audit-sync.md" 0644 "prompts/audit-sync.md"
 install_copy "$REPO_ROOT/config/pi/extensions/delete-guard.ts" "$EXT_DIR/delete-guard.ts" 0644 "delete-guard.ts"
 install_copy "$REPO_ROOT/config/pi/extensions/session-snapshot.ts" "$EXT_DIR/session-snapshot.ts" 0644 "session-snapshot.ts"
 install_copy "$REPO_ROOT/config/pi/extensions/openrouter-sanitizer.ts" "$EXT_DIR/openrouter-sanitizer.ts" 0644 "openrouter-sanitizer.ts"

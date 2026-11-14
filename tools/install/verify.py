@@ -240,6 +240,7 @@ class Verifier:
         pi_sources = {
             "AGENT.md": REPO_ROOT / "config/pi/AGENT.md",
             "keybindings.json": REPO_ROOT / "config/pi/keybindings.json",
+            "prompts/audit-sync.md": REPO_ROOT / "config/pi/prompts/audit-sync.md",
             "extensions/delete-guard.ts": REPO_ROOT / "config/pi/extensions/delete-guard.ts",
             "extensions/session-snapshot.ts": REPO_ROOT / "config/pi/extensions/session-snapshot.ts",
             "extensions/openrouter-sanitizer.ts": REPO_ROOT / "config/pi/extensions/openrouter-sanitizer.ts",

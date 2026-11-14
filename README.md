@@ -107,6 +107,7 @@ tools/install/verify.sh [--no-external] [--strict-credentials]
 | Pi global settings | `config/pi/settings.template.json` | `~/.pi/agent/settings.json` (managed keys only; packages are additive) |
 | Pi project default model | `.pi/settings.json` | loaded for this repo after project trust |
 | Pi instructions and keybindings | `config/pi/AGENT.md`, `config/pi/keybindings.json` | `~/.pi/agent/` |
+| Pi `/audit-sync` command | `config/pi/prompts/audit-sync.md` | `~/.pi/agent/prompts/audit-sync.md` |
 | Pi extensions | `config/pi/extensions/`, `tools/popular-models/` | `~/.pi/agent/extensions/` |
 | Shared skills | `skills/common/` | Pi `~/.pi/agent/skills/`, AGY `~/.gemini/config/skills/` |
 | Pi Jev package | `npm:pi-jev` in settings; installed by `pi install` | `~/.pi/agent/npm/` |

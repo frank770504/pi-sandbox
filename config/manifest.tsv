@@ -17,6 +17,7 @@ pi-jev-package	runtime	-	pi install npm:pi-jev	install the declared package if i
 pi-project-model	runtime	.pi/settings.json	.pi/settings.json	project-level default model loaded after project trust; no separate install
 pi-agent	copy	config/pi/AGENT.md	~/.pi/agent/AGENT.md	pi global instructions
 pi-keybindings	copy	config/pi/keybindings.json	~/.pi/agent/keybindings.json	pi TUI keybindings
+pi-audit-sync-prompt	copy	config/pi/prompts/audit-sync.md	~/.pi/agent/prompts/audit-sync.md	/audit-sync slash-command template (drift audit + update plan, read-only)
 pi-delete-guard	copy	config/pi/extensions/delete-guard.ts	~/.pi/agent/extensions/delete-guard.ts	pi extension
 pi-session-snapshot	copy	config/pi/extensions/session-snapshot.ts	~/.pi/agent/extensions/session-snapshot.ts	pi extension
 pi-openrouter-sanitizer	copy	config/pi/extensions/openrouter-sanitizer.ts	~/.pi/agent/extensions/openrouter-sanitizer.ts	sanitizes role delimiters and masks secret/PII patterns in provider context
